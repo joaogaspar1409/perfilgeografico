@@ -1,0 +1,18 @@
+PERFIL GEOGRÁFICO - versão independente
+CIEP 353 Dr. Brochado da Rocha - turmas 1001, 1002, 2001 e 3001 (2026)
+
+Arquivos:
+  index.html           o jogo (abra no navegador)
+  cartas.js            as 453 cartas
+  assets/              tabuleiro, frente e verso das cartas
+  firebase-config.js   onde se cola a configuração do Firebase (modo online e ranking compartilhado)
+  firestore.rules      regras de segurança para colar no Firebase
+
+Sem configurar nada: abra index.html e jogue no modo "Todos nesta tela".
+O ranking fica salvo só naquele computador.
+
+Para o modo online e o ranking compartilhado, siga o guia
+"Guia de publicação - Perfil Geográfico online" (Google Docs).
+
+Para testar o modo online sem Firebase, no mesmo computador:
+publique o site e abra-o em várias abas com ?demo=1 no fim do endereço.

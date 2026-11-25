@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Professor administrador: troque o e-mail se for usar outra conta Google
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "joaogaspar1409@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+
+    // Ranking: todos leem, qualquer jogador registra uma partida nova,
+    // só o professor altera ou apaga.
+    match /partidas/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['quando','turma','fim','modo','vencedoras','equipes'])
+        && request.resource.data.turma is string && request.resource.data.turma.size() <= 20
+        && request.resource.data.equipes is list && request.resource.data.equipes.size() <= 6
+        && request.resource.data.vencedoras is list && request.resource.data.vencedoras.size() <= 6;
+      allow update, delete: if isAdmin();
+    }
+
+    // Salas do modo online: quem está jogando lê e atualiza; só o professor apaga.
+    match /salas/{codigo} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+  }
+}

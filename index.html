@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil Geográfico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Open+Sans:wght@400;600;700;800&family=Playfair+Display:ital,wght@1,900&display=swap" rel="stylesheet">
+<style>
+/* VOICE  occasion: a classroom board game, warm and lively, made by students
+   IDEA   the printed game itself: the students' parchment board and their card fronts and backs
+   PICTURE the real board (with clickable tip hexes and team pawns) beside the live card
+   COLOUR parchment ground, sepia ink, team pawns in strong flat colours
+   TYPE   Playfair Display italic 900 (board title) + DM Serif Display (card titles) + Open Sans
+   LAYOUT laptop: board left, card column right; 700px and phone: board, then card, then controls */
+:root{color-scheme:light;--bg:#efe0bf;--paper:#f6ead0;--ink:#3f2a12;--soft:#6e4b22;--line:#b89a66;--card:#8b572a;--accent:#a4161a;--hex:#b08a55}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Open Sans",system-ui,sans-serif;overflow-x:clip}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:10px max(2.5vw,16px);background:#5a3a14;color:#f6ead0}
+.brand{font:italic 900 24px/1 "Playfair Display",serif;margin-right:auto;letter-spacing:-.01em}
+.brand small{font:600 13px "Open Sans";opacity:.8;margin-left:8px;font-style:normal}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{color:inherit;text-decoration:none;padding:9px 14px;border-radius:8px;font-weight:600}
+nav a[aria-current=page]{background:#f6ead0;color:#5a3a14}
+.btn{min-height:44px;padding:9px 18px;border-radius:10px;border:1.5px solid var(--soft);background:var(--paper);color:var(--ink);font-weight:700}
+.btn:hover{background:#fff6e2}
+.btn.main{background:var(--soft);color:#fff6e2;border-color:var(--soft)}
+.btn.main:hover{background:#5a3a14}
+.btn:disabled{opacity:.45;cursor:default}
+main{padding:16px max(2.5vw,16px) 32px;max-width:1500px;margin:0 auto}
+[hidden]{display:none!important}
+#jogar{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1000px){#jogar{grid-template-columns:minmax(0,1fr) minmax(330px,400px);align-items:start}}
+.board{position:relative;aspect-ratio:842.25/595.5;background:url(assets/tabuleiro.jpg) center/100% 100%;border-radius:6px;box-shadow:0 2px 0 #b89a66,0 10px 30px rgba(70,40,10,.25);container-type:inline-size}
+.hx{position:absolute;width:5.6%;height:9.1%;transform:translate(-50%,-50%);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:0;background:transparent;padding:0}
+.hx.on:hover,.hx.on:focus-visible{background:rgba(255,246,220,.45)}
+.hx.used{background:rgba(63,42,18,.62)}
+.pawn{position:absolute;width:3.1%;aspect-ratio:1;border-radius:50% 50% 45% 45%;transform:translate(-50%,-62%);border:2px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.35);transition:left .22s,top .22s;display:grid;place-items:center;color:#fff;font:800 1.25cqw/1 "Open Sans"}
+.pawn.cur{outline:3px solid #fff6e2;outline-offset:2px;animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,-75%)}}
+.teams{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.team{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:999px;background:var(--paper);border:1.5px solid var(--line);font-weight:600}
+.team.cur{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.dot{width:18px;height:18px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.team b{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--soft)}
+.team .skip{font-size:13px;color:var(--accent)}
+.side{display:grid;gap:14px;justify-items:center}
+.status{width:100%;max-width:400px;padding:12px 14px;border-radius:12px;background:var(--paper);border:1.5px solid var(--line);font-weight:600;line-height:1.35}
+.status .who{display:inline-flex;align-items:center;gap:6px}
+.card{position:relative;width:100%;max-width:400px;aspect-ratio:461/643;border-radius:14px;box-shadow:0 2px 0 #b89a66,0 12px 28px rgba(70,40,10,.3);perspective:1200px;container-type:inline-size}
+.face{position:absolute;inset:0;border-radius:14px;overflow:hidden;backface-visibility:hidden;transition:transform .55s}
+.back{background:url(assets/verso.jpg) center/cover}
+.front{background:url(assets/frente.jpg) center/cover;transform:rotateY(180deg);padding:7% 6.5% 5% 6.5%;display:flex;flex-direction:column;color:#5c3a1a}
+.card.open .back{transform:rotateY(-180deg)}
+.card.open .front{transform:rotateY(0)}
+.ttl{font:400 clamp(20px,8cqw,32px)/1.05 "DM Serif Display",serif;color:var(--card);text-align:center;text-wrap:balance;min-height:1.1em;margin:0 6% }
+.ttl.hid{letter-spacing:.2em;opacity:.55}
+.cat{display:flex;align-items:center;justify-content:center;gap:6px;margin:6px 0 8px;font:600 clamp(10px,2.9cqw,12.5px)/1 "Open Sans";letter-spacing:.06em;color:#5c3a1a}
+.cat svg{width:1.4em;height:1.4em;color:var(--card)}
+.cat::before,.cat::after{content:"";width:9%;height:1px;background:var(--card)}
+ol.tips{list-style:none;margin:0;padding:0;display:grid;gap:.28em;font-size:clamp(11.5px,3.45cqw,14.5px);line-height:1.22;overflow:auto}
+ol.tips li{display:grid;grid-template-columns:1.9em 1fr;align-items:start}
+ol.tips li i{font-style:normal;font-weight:700}
+ol.tips li.no span{border-bottom:1.5px dotted rgba(92,58,26,.45);height:.8em}
+ol.tips li.sp span{font-weight:700}
+ol.tips li.new span{background:rgba(255,236,170,.85);border-radius:3px;box-shadow:0 0 0 2px rgba(255,236,170,.85)}
+ol.tips li.late{opacity:.55}
+.drawbtn{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:2}
+.picker{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;width:100%;max-width:400px}
+.picker button{min-height:44px;border:0;background:var(--hex);color:#3f2a12;font:800 18px "Open Sans";clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);aspect-ratio:1/1.1}
+.picker button:hover:not(:disabled){background:#c9a66b}
+.picker button:disabled{background:#d9c49c;color:#a88c62;cursor:default}
+form.guess{display:flex;flex-wrap:wrap;gap:8px;width:100%;max-width:400px}
+form.guess input{flex:1 1 180px;min-height:44px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--soft);background:#fffaf0;font-size:16px}
+.msg{width:100%;max-width:400px;min-height:1.5em;font-weight:600}
+.msg.ok{color:#2d6a4f}.msg.bad{color:var(--accent)}
+.override{background:none;border:0;padding:0;text-decoration:underline;color:var(--soft);font-weight:600;font-size:14px;min-height:32px}
+.log{width:100%;max-width:400px;margin:0;padding:0 0 0 18px;font-size:14px;color:var(--soft)}
+dialog{border:0;border-radius:16px;padding:22px;background:var(--paper);color:var(--ink);max-width:min(560px,94vw);box-shadow:0 20px 60px rgba(40,20,0,.45)}
+dialog::backdrop{background:rgba(40,25,8,.55)}
+dialog h2{font:400 30px/1.1 "DM Serif Display",serif;margin:0 0 12px;color:var(--card)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.tin{display:flex;align-items:center;gap:6px}
+.tin input{width:9.5em;min-height:40px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fffaf0;font-size:16px}
+.chk{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1.5px solid var(--line);border-radius:999px;background:#fffaf0;font-size:14px;font-weight:600}
+.chk svg{width:18px;height:18px;color:var(--card)}
+.win{text-align:center}
+.win .big{font:italic 900 clamp(36px,7vw,56px)/1 "Playfair Display",serif;color:#5a3a14;margin:6px 0 10px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.tools input[type=search]{flex:1 1 220px;min-height:44px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--soft);background:#fffaf0;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{min-height:40px;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fffaf0;font-weight:600;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.chips button svg{width:17px;height:17px;color:var(--card)}
+.chips button[aria-pressed=true]{background:var(--soft);color:#fff6e2;border-color:var(--soft)}
+.chips button[aria-pressed=true] svg{color:#fff6e2}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.mini{position:relative;aspect-ratio:461/643;border:0;border-radius:10px;background:url(assets/frente.jpg) center/cover;box-shadow:0 2px 6px rgba(70,40,10,.25);display:grid;place-content:center;gap:8px;padding:12px;text-align:center}
+.mini strong{font:400 20px/1.1 "DM Serif Display",serif;color:var(--card);text-wrap:balance}
+.mini svg{width:26px;height:26px;color:var(--card);justify-self:center}
+.mini:hover{transform:translateY(-2px)}
+.count{color:var(--soft);font-weight:600;font-size:14px}
+#cardDlg{padding:0;background:transparent;box-shadow:none;width:min(400px,92vw);max-width:none}
+#cardDlg .card{max-width:none}
+#cardDlg .close{position:absolute;top:-6px;right:-6px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:#5a3a14;color:#fff;font-size:22px}
+.about{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:860px){.about{grid-template-columns:minmax(0,320px) minmax(0,1fr);align-items:start}}
+.about img{width:100%;border-radius:14px;box-shadow:0 12px 28px rgba(70,40,10,.3)}
+.about h1{font:italic 900 clamp(34px,5vw,50px)/1.05 "Playfair Display",serif;margin:0 0 10px;color:#5a3a14;letter-spacing:-.02em}
+.about h2{font:400 26px/1.15 "DM Serif Display",serif;color:var(--card);margin:26px 0 8px}
+.about p,.about li{max-width:68ch}
+.turmas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.turmas span{padding:8px 16px;border-radius:10px;background:#5a3a14;color:#f6ead0;font:800 20px "Open Sans"}
+.toast{position:absolute;left:6%;right:6%;top:38%;z-index:4;padding:14px 16px;border-radius:12px;background:#5a3a14;color:#fff6e2;font-weight:700;text-align:center;line-height:1.35;box-shadow:0 10px 30px rgba(40,20,0,.45);animation:pop .25s ease-out}
+.toast .dot{display:inline-block;vertical-align:-3px;margin:0 4px}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{min-width:48px;min-height:48px;border-radius:10px;border:1.5px solid var(--soft);background:#fffaf0;font:800 20px "Open Sans"}
+.seg button[aria-pressed=true]{background:var(--soft);color:#fff6e2}
+.opt{display:grid;gap:6px;margin:8px 0}
+.opt label{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:#fffaf0;font-size:15px;line-height:1.35}
+.opt input{margin-top:3px;width:18px;height:18px;flex:none}
+.endrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.rk-head{display:flex;flex-wrap:wrap;align-items:end;gap:10px 20px;margin-bottom:16px}
+.rk-head h1{font:italic 900 clamp(32px,5vw,48px)/1.05 "Playfair Display",serif;margin:0;color:#5a3a14;letter-spacing:-.02em;margin-right:auto}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end;max-width:760px;margin:0 0 22px}
+.pod{border-radius:14px 14px 4px 4px;background:var(--paper);border:1.5px solid var(--line);text-align:center;padding:12px 8px}
+.pod .n{font:400 clamp(17px,2.6vw,24px)/1.1 "DM Serif Display",serif;color:var(--card);overflow-wrap:anywhere}
+.pod .m{font:italic 900 clamp(30px,5vw,46px)/1 "Playfair Display",serif;color:#5a3a14}
+.pod.p1{padding-block:26px;background:#e6cf9c}.pod.p2{padding-block:18px}
+.tbl{overflow-x:auto;border-radius:12px;border:1.5px solid var(--line);background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #dcc597}
+th{font-weight:700;color:var(--soft);background:#ead6ab}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.empty{padding:22px;color:var(--soft);font-weight:600}
+.del{border:0;background:none;color:var(--accent);font-weight:700;min-height:36px;text-decoration:underline}
+.note{font-size:14px;color:var(--soft);margin-top:10px}
+@media(max-width:600px){table{font-size:13px}th,td{padding:7px 6px}}
+@media(max-width:600px){.brand{font-size:21px}.brand small{display:none}nav a{padding:8px 10px}.picker{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.face,.pawn{transition:none}.pawn.cur{animation:none}}
+
+.roombar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:12px;padding:10px 14px;border-radius:12px;background:#5a3a14;color:#f6ead0;font-weight:600}
+.roombar .code{font:800 26px/1 "Open Sans";letter-spacing:.12em;background:#f6ead0;color:#5a3a14;padding:4px 12px;border-radius:8px}
+.roombar select{min-height:40px;border-radius:8px;border:0;padding:4px 8px;font:600 16px "Open Sans";background:#fffaf0;color:#3f2a12}
+.roombar .btn{min-height:40px;padding:6px 14px}
+.roombar .hint{flex-basis:100%;font-weight:400;font-size:14px;opacity:.9}
+.roombar select.need{outline:3px solid #ffd166}
+.mode{display:grid;gap:6px;margin:8px 0 12px}
+.joincode{font:800 28px "Open Sans";letter-spacing:.2em;text-transform:uppercase;width:6.5em;text-align:center;min-height:52px;border-radius:10px;border:1.5px solid var(--soft);background:#fffaf0}
+.adm{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+</style>
+<script src="firebase-config.js"></script>
+<script src="cartas.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="ic0" viewBox="2 2 36 36"><path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 7.25 32.75 C 4.699219 11.5 23.398438 3.851562 34.449219 5.550781 C 36.148438 16.601562 28.5 35.300781 7.25 32.75 "/>
+<path fill="none" stroke-width="1.904" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(100%, 100%, 100%)" stroke-opacity="1" stroke-miterlimit="10" d="M 9.800781 9.800781 L 30.199219 30.199219 " transform="matrix(1, 0, 0, -1, 0, 40)"/></symbol><symbol id="ic1" viewBox="2 2 36 36"><path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 4.191406 33.601562 L 14.730469 30.539062 L 25.269531 33.601562 L 35.808594 30.539062 L 35.808594 6.398438 L 25.269531 9.460938 L 14.730469 6.398438 L 4.191406 9.460938 Z M 4.191406 33.601562 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 14.730469 30.539062 L 14.730469 6.398438 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 25.269531 33.601562 L 25.269531 9.460938 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 22.71875 19.148438 C 22.71875 17.648438 21.503906 16.429688 20 16.429688 C 18.496094 16.429688 17.28125 17.648438 17.28125 19.148438 C 17.28125 20.652344 18.496094 21.871094 20 21.871094 C 21.503906 21.871094 22.71875 20.652344 22.71875 19.148438 "/></symbol><symbol id="ic2" viewBox="2 2 36 36"><path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 5.550781 33.601562 L 11.328125 33.601562 L 11.328125 24.25 L 5.550781 24.25 Z M 5.550781 33.601562 "/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 15.75 33.601562 L 21.53125 33.601562 L 21.53125 17.449219 L 15.75 17.449219 Z M 15.75 33.601562 "/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 25.949219 33.601562 L 31.730469 33.601562 L 31.730469 10.648438 L 25.949219 10.648438 Z M 25.949219 33.601562 "/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 4.699219 18.300781 L 32.75 32.75 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 35.300781 4.699219 L 26.800781 6.398438 L 33.601562 13.199219 Z M 35.300781 4.699219 "/></symbol><symbol id="ic3" viewBox="2 2 36 36"><path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 17.007812 14.507812 C 17.007812 12.59375 15.457031 11.039062 13.539062 11.039062 C 11.625 11.039062 10.070312 12.59375 10.070312 14.507812 C 10.070312 16.425781 11.625 17.976562 13.539062 17.976562 C 15.457031 17.976562 17.007812 16.425781 17.007812 14.507812 "/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 7.472656 33.601562 C 7.472656 18.265625 19.609375 18.265625 19.609375 33.601562 Z M 7.472656 33.601562 "/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 30.539062 13.539062 C 30.539062 11.285156 28.714844 9.460938 26.460938 9.460938 C 24.207031 9.460938 22.378906 11.285156 22.378906 13.539062 C 22.378906 15.792969 24.207031 17.621094 26.460938 17.621094 C 28.714844 17.621094 30.539062 15.792969 30.539062 13.539062 "/>
+<path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 19.320312 33.601562 C 19.320312 17.960938 33.601562 17.960938 33.601562 33.601562 Z M 19.320312 33.601562 "/></symbol><symbol id="ic4" viewBox="2 2 36 36"><path fill-rule="evenodd" fill="currentColor" fill-opacity="1" d="M 20.8125 36.050781 L 20.582031 35.585938 L 20.945312 35.195312 L 20.472656 34.636719 L 19.824219 34.179688 L 18.976562 33.652344 L 18.671875 33.675781 L 17.847656 33.039062 L 17.3125 33.128906 L 18.410156 32.003906 L 19.339844 31.207031 L 19.890625 30.871094 L 20.582031 30.417969 L 20.601562 29.761719 L 20.191406 29.285156 L 19.78125 29.445312 L 19.941406 28.96875 L 20.054688 28.480469 L 20.054688 28.03125 L 19.757812 27.878906 L 19.449219 28.015625 L 19.144531 27.976562 L 19.046875 27.660156 L 18.96875 26.90625 L 18.816406 26.660156 L 18.261719 26.4375 L 17.921875 26.597656 L 17.054688 26.441406 L 17.109375 25.324219 L 16.867188 24.867188 L 17.125 24.695312 L 17.042969 24.226562 L 17.273438 23.867188 L 17.417969 23.21875 L 17.222656 22.707031 L 16.773438 22.476562 L 16.683594 22.152344 L 16.808594 21.675781 L 15.226562 21.644531 L 14.910156 20.683594 L 15.152344 20.671875 L 15.140625 20.316406 L 14.980469 20.074219 L 14.945312 19.597656 L 14.464844 19.355469 L 13.949219 19.363281 L 13.609375 19.125 L 13.050781 18.960938 L 12.726562 18.65625 L 11.804688 18.519531 L 10.910156 17.78125 L 10.980469 17.230469 L 10.878906 16.914062 L 10.964844 16.296875 L 9.890625 16.4375 L 9.453125 16.746094 L 8.734375 17.078125 L 8.550781 17.328125 L 8.128906 17.347656 L 7.515625 17.277344 L 7.050781 17.417969 L 6.679688 17.324219 L 6.730469 16.074219 L 6.058594 16.558594 L 5.332031 16.535156 L 5.019531 16.097656 L 4.476562 16.050781 L 4.648438 15.699219 L 4.191406 15.199219 L 3.851562 14.457031 L 4.066406 14.304688 L 4.066406 13.957031 L 4.5625 13.71875 L 4.480469 13.277344 L 4.691406 12.988281 L 4.75 12.605469 L 5.691406 12.046875 L 6.363281 11.886719 L 6.472656 11.761719 L 7.21875 11.800781 L 7.589844 9.546875 L 7.605469 9.1875 L 7.480469 8.71875 L 7.113281 8.417969 L 7.117188 7.820312 L 7.578125 7.683594 L 7.746094 7.769531 L 7.773438 7.453125 L 7.292969 7.367188 L 7.28125 6.855469 L 8.882812 6.871094 L 9.15625 6.589844 L 9.382812 6.847656 L 9.546875 7.335938 L 9.699219 7.234375 L 10.152344 7.667969 L 10.792969 7.617188 L 10.953125 7.363281 L 11.5625 7.171875 L 11.902344 7.035156 L 12 6.6875 L 12.585938 6.453125 L 12.542969 6.28125 L 11.84375 6.210938 L 11.730469 5.691406 L 11.765625 5.140625 L 11.394531 4.925781 L 11.546875 4.851562 L 12.160156 4.957031 L 12.8125 5.164062 L 13.050781 4.96875 L 13.644531 4.839844 L 14.5625 4.53125 L 14.863281 4.21875 L 14.753906 3.984375 L 15.183594 3.949219 L 15.371094 4.140625 L 15.265625 4.5 L 15.550781 4.625 L 15.738281 5.007812 L 15.507812 5.296875 L 15.378906 5.996094 L 15.589844 6.414062 L 15.648438 6.796875 L 16.15625 7.179688 L 16.5625 7.222656 L 16.648438 7.058594 L 16.910156 7.023438 L 17.285156 6.878906 L 17.550781 6.660156 L 18.007812 6.730469 L 18.203125 6.703125 L 18.652344 6.769531 L 18.726562 6.601562 L 18.589844 6.4375 L 18.671875 6.199219 L 19.003906 6.273438 L 19.394531 6.1875 L 19.863281 6.363281 L 20.222656 6.53125 L 20.476562 6.308594 L 20.660156 6.34375 L 20.773438 6.574219 L 21.167969 6.515625 L 21.484375 6.203125 L 21.734375 5.597656 L 22.222656 4.84375 L 22.503906 4.804688 L 22.707031 5.261719 L 23.167969 6.699219 L 23.609375 6.835938 L 23.628906 7.402344 L 23.011719 8.082031 L 23.265625 8.328125 L 24.722656 8.457031 L 24.75 9.285156 L 25.375 8.742188 L 26.410156 9.039062 L 27.777344 9.542969 L 28.179688 10.023438 L 28.046875 10.480469 L 29.003906 10.226562 L 30.601562 10.660156 L 31.832031 10.628906 L 33.046875 11.308594 L 34.101562 12.230469 L 34.734375 12.46875 L 35.4375 12.503906 L 35.734375 12.761719 L 36.015625 13.808594 L 36.148438 14.308594 L 35.824219 15.667969 L 35.402344 16.203125 L 34.246094 17.347656 L 33.722656 18.28125 L 33.109375 18.992188 L 32.90625 19.007812 L 32.675781 19.613281 L 32.734375 21.15625 L 32.507812 22.425781 L 32.417969 22.96875 L 32.15625 23.292969 L 32.011719 24.390625 L 31.175781 25.464844 L 31.039062 26.316406 L 30.371094 26.671875 L 30.179688 27.167969 L 29.285156 27.164062 L 27.988281 27.480469 L 27.410156 27.84375 L 26.488281 28.085938 L 25.523438 28.742188 L 24.824219 29.558594 L 24.703125 30.171875 L 24.839844 30.625 L 24.6875 31.457031 L 24.503906 31.859375 L 23.925781 32.3125 L 23.011719 33.761719 L 22.289062 34.414062 L 21.730469 34.796875 L 21.355469 35.582031 Z M 20.8125 36.050781 "/></symbol><symbol id="ic5" viewBox="2 2 36 36"><path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 34.449219 20 C 34.449219 27.980469 27.980469 34.449219 20 34.449219 C 12.019531 34.449219 5.550781 27.980469 5.550781 20 C 5.550781 12.019531 12.019531 5.550781 20 5.550781 C 27.980469 5.550781 34.449219 12.019531 34.449219 20 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 25.949219 20 C 25.949219 27.980469 23.285156 34.449219 20 34.449219 C 16.714844 34.449219 14.050781 27.980469 14.050781 20 C 14.050781 12.019531 16.714844 5.550781 20 5.550781 C 23.285156 5.550781 25.949219 12.019531 25.949219 20 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 20 5.550781 L 20 34.449219 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 5.550781 20 L 34.449219 20 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 7.097656 26.503906 L 32.902344 26.503906 " transform="matrix(1, 0, 0, -1, 0, 40)"/>
+<path fill="none" stroke-width="2.38" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor" stroke-opacity="1" stroke-miterlimit="10" d="M 7.097656 13.496094 L 32.902344 13.496094 " transform="matrix(1, 0, 0, -1, 0, 40)"/></symbol></svg>
+<header>
+  <div class="brand">Perfil Geográfico <small>CIEP 353</small></div>
+  <nav>
+    <a href="#jogar" data-v="jogar">Jogar</a>
+    <a href="#ranking" data-v="ranking">Ranking</a>
+    <a href="#cartas" data-v="cartas">Cartas</a>
+    <a href="#sobre" data-v="sobre">Quem fez</a>
+  </nav>
+  <button class="btn" id="joinBtn" type="button">Entrar numa sala</button>
+  <button class="btn" id="novaBtn" type="button">Nova partida</button>
+</header>
+<main>
+  <section id="jogar" class="view" aria-label="Jogo">
+    <div>
+      <div class="roombar" id="roombar" hidden></div>
+      <div class="board" id="board"></div>
+      <div class="teams" id="teams"></div>
+      <div class="endrow"><button class="btn" type="button" id="endBtn">Encerrar e salvar no ranking</button></div>
+    </div>
+    <div class="side">
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="card" id="card">
+        <div class="face back"></div>
+        <div class="face front"><div class="ttl" id="ttl"></div><div class="cat" id="cat"></div><ol class="tips" id="tips"></ol></div>
+        <button class="btn main drawbtn" id="drawBtn" type="button">Puxar carta</button>
+        <div id="toast"></div>
+      </div>
+      <div class="picker" id="picker" aria-label="Escolha o número da dica"></div>
+      <form class="guess" id="guess" autocomplete="off">
+        <input id="gIn" placeholder="Quem ou o que sou eu?" aria-label="Resposta">
+        <button class="btn main" type="submit" id="sendBtn">Responder</button>
+        <button class="btn" type="button" id="askBtn" hidden>Pedir nova dica</button>
+        <button class="btn" type="button" id="passBtn">Passar</button>
+      </form>
+      <div class="msg" id="msg" aria-live="polite"></div>
+      <ol class="log" id="log" reversed></ol>
+    </div>
+  </section>
+
+  <section id="ranking" class="view" hidden aria-label="Ranking histórico">
+    <div class="rk-head"><h1>Ranking histórico</h1>
+      <div class="chips" id="rkMode"><button type="button" data-m="eq" aria-pressed="true">Por equipe</button><button type="button" data-m="tu" aria-pressed="false">Por turma</button></div>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div class="tbl"><table><thead><tr id="rkHead"></tr></thead><tbody id="rkBody"></tbody></table></div>
+    <h2 style="font:400 26px/1.15 'DM Serif Display',serif;color:var(--card);margin:28px 0 10px">Partidas jogadas</h2>
+    <div class="tbl"><table><thead><tr><th>Data</th><th>Turma</th><th>Vencedora</th><th>Equipes (casa final)</th><th></th></tr></thead><tbody id="gBody"></tbody></table></div>
+    <p class="note" id="rkNote"></p>
+    <div class="adm" id="adm"></div>
+  </section>
+
+  <section id="cartas" class="view" hidden aria-label="Todas as cartas">
+    <div class="tools">
+      <input type="search" id="q" placeholder="Procurar carta (ex.: Angola, clima, IDH)" aria-label="Procurar carta">
+      <span class="count" id="cnt"></span>
+    </div>
+    <div class="chips" id="fchips" style="margin-bottom:14px"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="sobre" class="view" hidden>
+    <div class="about">
+      <img src="assets/verso.jpg" alt="Arte do verso das cartas criada pelos estudantes do CIEP 353">
+      <div>
+        <h1>Um jogo feito pelos estudantes</h1>
+        <p>O Perfil Geográfico foi criado em 2026 pelos estudantes do Ensino Médio do CIEP 353 Dr. Brochado da Rocha, em Papucaia, Cachoeiras de Macacu (RJ). Eles pesquisaram e escreveram as dicas das cartas e desenharam a arte do verso e o tabuleiro que aparecem neste site.</p>
+        <div class="turmas"><span>1001</span><span>1002</span><span>2001</span><span>3001</span></div>
+        <p>Professores de Geografia: <strong>João Victor Gaspar Martins</strong> e <strong>Letícia Rocha da Conceição</strong>, que também revisaram as cartas e ampliaram o baralho com todos os estados, capitais e os 193 países-membros da ONU.</p>
+        <h2>Como jogar</h2>
+        <ol>
+          <li>Na sua vez, a equipe escolhe um número de 1 a 12 (no tabuleiro ou nos hexágonos ao lado da carta) e lê a dica.</li>
+          <li>Depois pode tentar adivinhar quem ou o que é a carta, ou passar. Se errar ou passar, a vez vai para a próxima equipe. Em Nova partida dá para escolher se a próxima equipe pede outra dica ou pode responder logo com as dicas já lidas.</li>
+          <li>Quem acerta avança uma casa para cada dica que ainda não foi lida. Quanto menos dicas, mais longe se vai.</li>
+          <li>Algumas dicas são ações: avançar, voltar, perder a vez, revelar outra dica ou escolher outra equipe para andar.</li>
+          <li>Se ninguém acertar depois das 12 dicas, a resposta aparece e ninguém anda. Vence quem chegar primeiro à casa 78. Se a aula acabar antes, use “Encerrar e salvar no ranking”: vence quem estiver mais à frente.</li>
+        </ol>
+        <h2>Jogar online</h2>
+        <p>Em Nova partida, escolha “Online”. O site cria uma sala com um código de 4 letras. Em cada celular ou computador, abra o site, toque em “Entrar numa sala”, digite o código e escolha a equipe. Cada equipe só joga na sua vez; a tela de quem criou a sala pode ficar no projetor.</p>
+        <h2>As cartas</h2>
+        <p id="sobreCnt"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="setup">
+  <form method="dialog">
+    <h2>Nova partida</h2>
+    <strong>Onde vão jogar?</strong>
+    <div class="opt mode">
+      <label><input type="radio" name="where" id="whereL" checked>Todos nesta tela (projetor ou computador da sala).</label>
+      <label><input type="radio" name="where" id="whereO">Online: cada equipe no seu celular ou computador, com código de sala.</label>
+    </div>
+    <p class="note" id="onlineOff" hidden>O modo online ainda não está ativado neste site. Siga o guia de publicação para ligar o Firebase.</p>
+    <div class="row"><label class="tin"><strong>Turma</strong> <input id="turma" placeholder="ex.: 1001" aria-label="Turma (opcional)" style="width:8em"></label></div>
+    <strong>Quantas equipes?</strong>
+    <div class="seg row" id="nSeg"></div>
+    <div class="row" id="tnames"></div>
+    <strong>Quando uma equipe erra</strong>
+    <div class="opt">
+      <label><input type="radio" name="rule" id="ruleA" checked>A vez passa para a próxima equipe, que pede uma nova dica.</label>
+      <label><input type="radio" name="rule" id="ruleB">A vez passa e a próxima equipe pode responder logo, com as dicas já lidas, ou pedir uma nova dica.</label>
+    </div>
+    <strong>Categorias</strong>
+    <div class="row" id="scats"></div>
+    <p class="msg bad" id="setupErr"></p>
+    <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" value="cancel" type="submit">Cancelar</button><button class="btn main" id="startBtn" type="button">Começar</button></div>
+  </form>
+</dialog>
+<dialog id="joinDlg">
+  <form id="joinForm">
+    <h2>Entrar numa sala</h2>
+    <p>Digite o código que aparece na tela de quem criou a partida.</p>
+    <div class="row"><input class="joincode" id="joinCode" maxlength="4" autocomplete="off" aria-label="Código da sala"></div>
+    <p class="msg bad" id="joinErr"></p>
+    <div class="row" style="justify-content:flex-end"><button class="btn" type="button" id="joinNo">Cancelar</button><button class="btn main" type="submit">Entrar</button></div>
+  </form>
+</dialog>
+<dialog id="pickTeam"><h2 id="ptTitle"></h2><div class="row" id="ptRow"></div></dialog>
+<dialog id="winDlg" class="win"><p>Fim de jogo!</p><div class="big" id="winName"></div><p id="winTxt"></p><p class="note" id="savedTxt"></p><div class="row" style="justify-content:center"><button class="btn" id="seeRk" type="button">Ver ranking</button><button class="btn main" id="againBtn" type="button">Jogar de novo</button></div></dialog>
+<dialog id="endDlg"><h2>Encerrar a partida?</h2><p>A partida será salva no ranking com a posição atual de cada equipe. Vence quem estiver mais à frente.</p><div class="row" style="justify-content:flex-end"><button class="btn" type="button" id="endNo">Continuar jogando</button><button class="btn main" type="button" id="endYes">Encerrar e salvar</button></div></dialog>
+<dialog id="cardDlg"><button class="close" type="button" aria-label="Fechar">×</button><div class="card open"><div class="face back"></div><div class="face front"><div class="ttl"></div><div class="cat"></div><ol class="tips"></ol></div></div></dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+{
+const CATS=['Natureza e Ambiente','Cartografia','Economia e Geopolítica','Sociedade e Cultura','Brasil','Mundo'];
+const COLORS=['#a4161a','#1b4965','#2d6a4f','#6a4c93','#d17a00','#222222'];
+const W=842.25,H=595.5,PX=110/72,GOAL=78;
+const CARDS=window.CARTAS||[];
+const CONF=window.PERFIL_CONFIG||{};
+const $=s=>document.querySelector(s);
+const ic=i=>`<svg aria-hidden="true"><use href="#ic${i}"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SP=/^(Avance|Volte|Perca|Escolha|Revele)/;
+const col=(k,a,b)=>{const r=[];if(a<=b)for(let j=a;j<=b;j++)r.push([k,j]);else for(let j=a;j>=b;j--)r.push([k,j]);return r};
+const PATH=[...col(0,7,0),[1,0],...col(2,0,8),[3,8],...col(4,8,0),[5,0],...col(6,0,8),[7,8],...col(8,8,0),[9,0],...col(10,0,8),[11,8],...col(12,8,0),[13,0],[14,0],...col(15,0,7)];
+const cellXY=n=>{if(n<=0)return[72.8/W*100,541/H*100];const[k,j]=PATH[Math.min(n,GOAL)-1];return[(102+70*k)/PX/W*100,(263+70*j)/PX/H*100]};
+const R=27,DX=R*Math.sqrt(3),X0=198;
+const HEX=[...Array(12)].map((_,i)=>i<6?[(X0+DX/2+i*DX)/W*100,52/H*100]:[(X0+(i-6)*DX)/W*100,(52+1.5*R)/H*100]);
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\(.*?\)/g,' ').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w&&!['o','a','os','as','do','da','de','dos','das','e','um','uma'].includes(w)).join(' ');
+const lev=(a,b)=>{const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return d[b.length]};
+const match=(g,t)=>{const a=norm(g),b=norm(t);if(!a)return false;if(a===b)return true;return b.length>=4&&lev(a,b)<=Math.floor(b.length/6)};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const rid=n=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- armazenamento: Firebase (online), demonstração (?demo) ou só este navegador ---------- */
+const DEMO=/[?&]demo\b/.test(location.search);
+function browserNet(){
+  const uid=sessionStorage.getItem('pg-uid')||('u'+rid(8));try{sessionStorage.setItem('pg-uid',uid)}catch(e){}
+  const L=new Map();
+  const read=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+  const fire=(k,v)=>(L.get(k)||new Set()).forEach(f=>f(v));
+  const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}fire(k,v)};
+  addEventListener('storage',e=>{if(e.key)fire(e.key,read(e.key))});
+  const sub=(k,cb)=>{if(!L.has(k))L.set(k,new Set());L.get(k).add(cb);setTimeout(()=>cb(read(k)));return()=>L.get(k).delete(cb)};
+  return{kind:DEMO?'demo':'local',uid,isAdmin:()=>true,online:DEMO,
+    getRoom:async c=>read('pg-sala-'+c),
+    createRoom:async(c,st)=>{if(read('pg-sala-'+c))throw new Error('existe');write('pg-sala-'+c,st)},
+    subRoom:(c,cb)=>sub('pg-sala-'+c,cb),
+    tx:async(c,fn)=>{const nx=fn(read('pg-sala-'+c));if(nx)write('pg-sala-'+c,nx)},
+    subGames:cb=>sub('pg-partidas',v=>cb(v||[])),
+    putGame:async(id,rec)=>{const a=read('pg-partidas')||[];if(a.some(g=>g.id===id))return;a.unshift({...rec,id});write('pg-partidas',a.slice(0,1000))},
+    delGame:async id=>write('pg-partidas',(read('pg-partidas')||[]).filter(g=>g.id!==id)),
+    signIn:async()=>{},signOut:async()=>{},onAuth:cb=>cb()};
+}
+async function firebaseNet(){
+  const cfg=CONF.firebase;
+  if(DEMO||!cfg||!cfg.apiKey||!window.firebase)return null;
+  try{
+    firebase.initializeApp(cfg);
+    const auth=firebase.auth(),fs=firebase.firestore();
+    await new Promise(res=>{const u=auth.onAuthStateChanged(()=>{u();res()})});
+    if(!auth.currentUser)await auth.signInAnonymously();
+    const admin=String(CONF.adminEmail||'').toLowerCase();
+    const room=c=>fs.collection('salas').doc(c);
+    return{kind:'firebase',online:true,get uid(){return auth.currentUser&&auth.currentUser.uid},
+      isAdmin:()=>{const u=auth.currentUser;return!!u&&!u.isAnonymous&&String(u.email||'').toLowerCase()===admin},
+      getRoom:async c=>{const d=await room(c).get();return d.exists?d.data():null},
+      createRoom:async(c,st)=>fs.runTransaction(async t=>{const d=await t.get(room(c));if(d.exists)throw new Error('existe');t.set(room(c),st)}),
+      subRoom:(c,cb)=>room(c).onSnapshot(d=>cb(d.exists?d.data():null),()=>cb(null)),
+      tx:async(c,fn)=>fs.runTransaction(async t=>{const d=await t.get(room(c));const nx=fn(d.exists?JSON.parse(JSON.stringify(d.data())):null);if(nx)t.set(room(c),nx)}),
+      subGames:cb=>fs.collection('partidas').orderBy('quando','desc').limit(500).onSnapshot(s=>cb(s.docs.map(d=>({...d.data(),id:d.id}))),()=>cb(null)),
+      putGame:async(id,rec)=>fs.collection('partidas').doc(id).set(rec),
+      delGame:async id=>fs.collection('partidas').doc(id).delete(),
+      signIn:async()=>{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())},
+      signOut:async()=>{await auth.signOut();await auth.signInAnonymously()},
+      onAuth:cb=>auth.onAuthStateChanged(()=>cb())};
+  }catch(e){console.warn('Firebase indisponível',e);return null}
+}
+let NET=browserNet();
+
+/* ---------- estado ---------- */
+let S=null,ME={mode:'local',code:null,team:null},unsubRoom=null;
+const store=()=>NET.kind==='demo'?sessionStorage:localStorage;
+const saveLocal=()=>{if(ME.mode==='local'){try{localStorage.setItem('pg-jogo',JSON.stringify(S))}catch(e){}}};
+const saveMe=()=>{try{store().setItem('pg-me',JSON.stringify(ME))}catch(e){}};
+const team=()=>S.teams[S.cur];
+const isHost=()=>ME.mode==='online'&&S&&S.host===NET.uid;
+const who=i=>`<span class="who"><span class="dot" style="background:${COLORS[i]}"></span>${esc(S.teams[i].name)}</span>`;
+function fresh(names,cats,turma,rule){
+  return{id:'p'+Date.now().toString(36)+rid(4).toLowerCase(),turma,rule,teams:names.map(n=>({name:n,pos:0,skip:false,hits:0})),cats,decks:null,lastCat:null,card:null,rev:[],nw:-1,phase:'draw',cur:0,log:[],steal:false,winners:[],end:null,msg:null,ev:null,evn:0,pick:null,host:null,modo:'local'};
+}
+function log(t){S.log.unshift(t);S.log=S.log.slice(0,6)}
+function nextTeam(){for(let k=0;k<S.teams.length;k++){S.cur=(S.cur+1)%S.teams.length;if(S.teams[S.cur].skip){S.teams[S.cur].skip=false;log(`${S.teams[S.cur].name} perdeu a vez.`);continue}break}}
+const pool=c=>shuffle(CARDS.map((x,i)=>i).filter(i=>CARDS[i].c===c));
+
+/* ---------- regras (só mexem em S) ---------- */
+function draw(){
+  if(!(S.phase==='draw'||S.phase==='done'))return;
+  if(!S.decks){S.decks={};S.cats.forEach(c=>{S.decks[c]=pool(c)})}
+  const opts=S.cats.length>1?S.cats.filter(c=>c!==S.lastCat):S.cats;
+  const cat=opts[Math.floor(Math.random()*opts.length)];
+  if(!S.decks[cat]||!S.decks[cat].length)S.decks[cat]=pool(cat);
+  S.card=S.decks[cat].pop();S.lastCat=cat;S.rev=[];S.phase='ask';S.steal=false;S.nw=-1;S.msg=null;S.ev=null;S.pick=null;
+}
+function move(i,n){const t=S.teams[i];t.pos=Math.max(0,Math.min(GOAL,t.pos+n));if(t.pos>=GOAL){finishGame('chegada');return true}return false}
+function finishGame(kind){
+  const max=Math.max(...S.teams.map(t=>t.pos));
+  S.winners=S.teams.filter(t=>t.pos===max&&max>0).map(t=>t.name);S.phase='over';S.end=kind;S.pick=null;
+}
+function revealRandom(){const c=CARDS[S.card];const o=[...Array(12).keys()].filter(i=>!S.rev.includes(i)&&!SP.test(c.d[i]));if(!o.length)return null;const k=o[Math.floor(Math.random()*o.length)];S.rev.push(k);return k}
+function ask(k){
+  if(S.phase!=='ask'||S.rev.includes(k)||k<0||k>11)return;
+  const c=CARDS[S.card],me=S.cur,t=team(),tip=c.d[k];S.rev.push(k);S.nw=k;S.steal=false;S.msg=null;S.ev=null;
+  let m;
+  if((m=tip.match(/^Avance (\d)/))){log(`${t.name}: dica ${k+1}, avançou ${m[1]}.`);if(move(me,+m[1]))return;S.phase='guess'}
+  else if((m=tip.match(/^Volte (\d)/))){log(`${t.name}: dica ${k+1}, voltou ${m[1]}.`);move(me,-m[1]);S.phase='guess'}
+  else if(/^Perca/.test(tip)){log(`${t.name}: dica ${k+1}, perdeu a vez.`);handoff('skip')}
+  else if(/^Revele/.test(tip)){const x=revealRandom();if(x!==null){S.nw=x;log(`${t.name}: dica ${k+1} revelou a dica ${x+1}.`)}S.phase='guess'}
+  else if((m=tip.match(/^Escolha um jogador para (voltar|avançar) (\d)/))){S.phase='choose';S.pick={verb:m[1],n:+m[2]}}
+  else S.phase='guess';
+}
+function pickTeam(i){
+  if(S.phase!=='choose'||!S.pick||i===S.cur||!S.teams[i])return;
+  const{verb,n}=S.pick;S.pick=null;log(`${team().name} fez ${S.teams[i].name} ${verb} ${n}.`);S.phase='guess';move(i,verb==='voltar'?-n:n);
+}
+function handoff(kind,steal=false){
+  if(S.rev.length>=12){finishCard(null);return}
+  const from=S.cur;nextTeam();
+  S.steal=steal&&S.rule==='B';S.phase=S.steal?'guess':'ask';S.evn=(S.evn||0)+1;S.ev={n:S.evn,kind,from,to:S.cur,steal:S.steal};
+}
+function finishCard(w){
+  const c=CARDS[S.card];S.steal=false;S.ev=null;
+  if(w!==null){const pts=Math.max(1,12-S.rev.length),t=S.teams[w];t.hits=(t.hits||0)+1;log(`${t.name} acertou ${c.t} e avançou ${pts}.`);S.msg={k:'ok',t:`Acertou! Era ${c.t}. Avança ${pts} casa${pts>1?'s':''}.`,ovr:null};S.phase='done';if(move(w,pts))return}
+  else{log(`Ninguém acertou: era ${c.t}.`);S.msg={k:'bad',t:`Ninguém acertou. Era ${c.t}.`,ovr:null};S.phase='done'}
+  nextTeam();
+}
+function guess(g){
+  if(S.phase!=='guess'||!String(g).trim())return;
+  g=String(g).slice(0,60);
+  if(match(g,CARDS[S.card].t)){finishCard(S.cur);return}
+  const me=S.cur;log(`${team().name} respondeu “${g}” e errou.`);
+  S.msg={k:'bad',t:`“${g}” não é a resposta.`,ovr:me,card:S.card};
+  handoff('err',true);
+}
+function askNew(){if(S.phase==='guess'&&S.steal){S.phase='ask';S.steal=false;S.ev=null}}
+function pass(){if(S.phase!=='guess')return;log(`${team().name} passou.`);S.msg=null;handoff('pass')}
+function override(){const m=S.msg;if(!m||m.ovr==null||m.card!==S.card||S.phase==='over'||S.phase==='done')return;S.cur=m.ovr;S.log.shift();finishCard(S.cur)}
+function endGame(){if(S.phase!=='over')finishGame('encerrada')}
+
+/* ---------- quem pode jogar ---------- */
+function can(a){
+  if(ME.mode!=='online')return true;
+  if(a==='override'||a==='end')return isHost();
+  if(a==='draw')return ME.team===S.cur||isHost();
+  return ME.team===S.cur;
+}
+async function act(a,fn){
+  if(!S||!can(a))return;
+  if(ME.mode!=='online'){fn();saveLocal();render();maybeSave();return}
+  try{await NET.tx(ME.code,cur=>{if(!cur)return null;S=cur;if(!can(a))return null;fn();return S})}
+  catch(e){flash('Não foi possível enviar a jogada. Confira a internet e tente de novo.')}
+}
+
+/* ---------- desenho da tela ---------- */
+let seenEv=null,seenPhase=null,seenCard=null,seenTurn='',tt=0,firstRender=true;
+function flash(html){const el=$('#toast');el.innerHTML=`<div class="toast">${html}</div>`;clearTimeout(tt);tt=setTimeout(()=>{el.innerHTML=''},2600)}
+function renderCard(root,c,rev,open,neu){
+  const sh=open?c.d.map((_,i)=>i):rev;
+  root.querySelector('.ttl').textContent=open?c.t:'? ? ?';
+  root.querySelector('.ttl').classList.toggle('hid',!open);
+  root.querySelector('.cat').innerHTML=`${ic(c.c)}${esc(CATS[c.c].toUpperCase())}`;
+  root.querySelector('.tips').innerHTML=c.d.map((t,i)=>{const s=sh.includes(i);const cls=[!s?'no':'',s&&SP.test(t)?'sp':'',i===neu?'new':'',open&&rev&&!rev.includes(i)?'late':''].join(' ');
+    return `<li class="${cls}"><i>${i+1}.</i><span>${s?esc(t):''}</span></li>`}).join('');
+}
+function render(){
+  if(!S)return;
+  const on=ME.mode==='online',ph=S.phase;
+  // sala online
+  const rb=$('#roombar');rb.hidden=!on;
+  if(on){rb.innerHTML=`<span>Sala</span><span class="code">${esc(ME.code)}</span><label>Neste aparelho: <select id="meTeam" class="${ME.team===null&&!isHost()?'need':''}"><option value="">só acompanhar</option>${S.teams.map((t,i)=>`<option value="${i}" ${ME.team===i?'selected':''}>${esc(t.name)}</option>`).join('')}</select></label><button class="btn" type="button" id="leaveBtn">Sair da sala</button>`+
+    (isHost()?`<span class="hint">Para entrar: abra este site em outro aparelho, toque em “Entrar numa sala” e digite ${esc(ME.code)}. Esta tela controla a partida.</span>`:(ME.team===null?'<span class="hint">Escolha a sua equipe acima para jogar.</span>':''))}
+  // tabuleiro
+  const myTurn=can('ask');
+  $('#board').innerHTML=HEX.map(([x,y],i)=>{const av=ph==='ask'&&!S.rev.includes(i)&&myTurn;return `<button class="hx ${S.card!==null&&S.rev.includes(i)?'used':''} ${av?'on':''}" style="left:${x}%;top:${y}%" data-k="${i}" aria-label="Dica ${i+1}" ${av?'':'tabindex="-1"'}></button>`}).join('')+
+    S.teams.map((t,i)=>{const same=S.teams.filter((o,j)=>o.pos===t.pos&&j<i).length;const[x,y]=cellXY(t.pos);const off=[[0,0],[1.1,0],[-1.1,0],[0,1.6],[1.1,1.6],[-1.1,1.6]][same];
+      return `<div class="pawn ${i===S.cur&&ph!=='over'?'cur':''}" style="background:${COLORS[i]};left:${x+off[0]}%;top:${y+off[1]}%" title="${esc(t.name)}">${i+1}</div>`}).join('');
+  $('#teams').innerHTML=S.teams.map((t,i)=>`<div class="team ${i===S.cur?'cur':''}"><span class="dot" style="background:${COLORS[i]}"></span>${esc(t.name)}${on&&ME.team===i?' (você)':''} <b>casa ${+t.pos}</b>${t.skip?'<span class="skip">perde a vez</span>':''}</div>`).join('');
+  // status
+  const c=S.card===null?null:CARDS[S.card],left=12-S.rev.length,w=who(S.cur);
+  const yours=on&&ME.team===S.cur&&ph!=='over'?' <strong>(é a sua vez!)</strong>':'';
+  const st={draw:`${w} começa. Puxe uma carta.`,ask:`Vez de ${w}: escolha uma dica de 1 a 12.`,guess:S.steal?`Vez de ${w}: respondam com as dicas lidas ou peçam uma nova dica.`:`${w}: quem ou o que sou eu? Responda ou passe.`,choose:`${w} está escolhendo uma equipe.`,done:`Próxima carta: ${w} começa.`,over:`Fim de jogo.`}[ph]||'';
+  $('#status').innerHTML=(S.turma?`<span style="font-weight:400">Turma ${esc(S.turma)} · </span>`:'')+st+yours+(c&&!['done','draw','over'].includes(ph)?` <span style="font-weight:400">Acertando agora: avança ${Math.max(1,left)}.</span>`:'');
+  // carta (vira ao trocar)
+  const card=$('#card');
+  if(c){renderCard(card,c,S.rev,ph==='done'||ph==='over',S.nw)}
+  if(S.card!==seenCard&&c&&!firstRender&&!reduced){card.classList.remove('open');setTimeout(()=>card.classList.toggle('open',S.phase!=='draw'),420)}
+  else card.classList.toggle('open',!!c&&ph!=='draw');
+  seenCard=S.card;
+  $('#drawBtn').hidden=!((ph==='draw'||ph==='done')&&can('draw'));
+  $('#drawBtn').textContent=ph==='done'?'Próxima carta':'Puxar carta';
+  $('#picker').innerHTML=[...Array(12)].map((_,i)=>`<button type="button" data-k="${i}" ${ph!=='ask'||S.rev.includes(i)||!myTurn?'disabled':''}>${i+1}</button>`).join('');
+  const g=ph==='guess'&&can('guess');$('#gIn').disabled=!g;$('#guess').querySelectorAll('button').forEach(x=>x.disabled=!g);
+  const turnKey=`${S.card}-${S.cur}-${ph}`;if(turnKey!==seenTurn){$('#gIn').value='';seenTurn=turnKey}
+  $('#askBtn').hidden=!(g&&S.steal);
+  $('#endBtn').disabled=ph==='over';$('#endBtn').hidden=on&&!isHost();
+  // mensagem
+  const m=$('#msg');m.className='msg '+(S.msg?S.msg.k:'');m.textContent=S.msg?S.msg.t:'';
+  if(S.msg&&S.msg.ovr!=null&&S.msg.card===S.card&&!['over','done'].includes(ph)&&can('override')){const b=document.createElement('button');b.className='override';b.type='button';b.id='ovr';b.textContent=' Professor: considerar certa';m.append(' ',b)}
+  $('#log').innerHTML=S.log.map(l=>`<li>${esc(l)}</li>`).join('');
+  // aviso de troca de vez
+  if(S.ev&&S.ev.n!==seenEv){if(!firstRender&&S.teams[S.ev.from]&&S.teams[S.ev.to]){const e=S.ev,head={err:`${who(e.from)} errou!`,pass:`${who(e.from)} passou.`,skip:`${who(e.from)} perdeu a vez!`}[e.kind]||'';flash(e.steal?`${head}<br>Vez de ${who(e.to)}: responda ou peça nova dica.`:`${head}<br>A vez passa para ${who(e.to)}.`)}seenEv=S.ev.n}
+  if(!S.ev)seenEv=null;
+  // escolher equipe
+  const pd=$('#pickTeam');
+  if(ph==='choose'&&S.pick&&can('pick')){$('#ptTitle').innerHTML=`${w} escolhe quem vai ${esc(S.pick.verb)} ${+S.pick.n} casas`;$('#ptRow').innerHTML=S.teams.map((o,i)=>i===S.cur?'':`<button class="btn" data-i="${i}" type="button">${who(i)}</button>`).join('');if(!pd.open)pd.showModal()}
+  else if(pd.open)pd.close();
+  // fim
+  if(ph==='over'&&seenPhase!==null&&seenPhase!=='over'){const max=Math.max(...S.teams.map(t=>t.pos));
+    $('#winName').textContent=S.winners.length?S.winners.join(' e '):'Sem vencedor';
+    $('#winTxt').textContent=S.end==='chegada'?'chegou à casa 78.':(S.winners.length>1?`empataram na casa ${max}.`:S.winners.length?`estava mais à frente, na casa ${max}.`:'Nenhuma equipe saiu do início.');
+    if(!$('#winDlg').open)$('#winDlg').showModal()}
+  seenPhase=ph;firstRender=false;
+}
+
+/* ---------- ranking ---------- */
+let GAMES=[],rkMode='eq',savedIds=new Set();
+function maybeSave(){
+  if(!S||S.phase!=='over'||savedIds.has(S.id))return;savedIds.add(S.id);
+  const rec={quando:new Date().toISOString(),turma:String(S.turma||'').slice(0,20),fim:S.end==='chegada'?'chegada':'encerrada',modo:ME.mode,vencedoras:(S.winners||[]).map(String),equipes:S.teams.map(t=>({nome:String(t.name).slice(0,30),casa:+t.pos||0,acertos:+t.hits||0}))};
+  NET.putGame(S.id,rec).then(()=>{$('#savedTxt').textContent=NET.kind==='firebase'?'Partida salva no ranking.':'Partida salva no ranking deste computador.'}).catch(()=>{$('#savedTxt').textContent=''});
+}
+function renderRank(){
+  const agg=new Map();
+  for(const g of GAMES){for(const e of(Array.isArray(g.equipes)?g.equipes:[])){
+    const nome=String(e.nome||''),turma=String(g.turma||'');const key=rkMode==='eq'?norm(turma)+'|'+norm(nome):(norm(turma)||'—');
+    const a=agg.get(key)||{nome:rkMode==='eq'?nome:(turma||'Sem turma'),turma,vit:0,par:0,ac:0,casas:0,seen:new Set()};
+    if(rkMode==='eq'){a.par++;a.vit+=(g.vencedoras||[]).includes(nome)?1:0}else if(!a.seen.has(g.id)){a.seen.add(g.id);a.par++}
+    a.ac+=+e.acertos||0;a.casas+=+e.casa||0;agg.set(key,a)}}
+  const rows=[...agg.values()].sort((x,y)=>rkMode==='eq'?(y.vit-x.vit||y.ac-x.ac||y.casas-x.casas):(y.ac-x.ac||y.casas-x.casas));
+  const val=r=>rkMode==='eq'?r.vit:r.ac,labf=v=>rkMode==='eq'?(v===1?'vitória':'vitórias'):(v===1?'acerto':'acertos');
+  $('#podium').innerHTML=rows.length?[1,0,2].filter(i=>rows[i]).map(i=>`<div class="pod p${i+1}"><div>${i+1}º</div><div class="n">${esc(rows[i].nome)}</div>${rkMode==='eq'&&rows[i].turma?`<div class="note" style="margin:2px 0">${esc(rows[i].turma)}</div>`:''}<div class="m">${val(rows[i])}</div><div>${labf(val(rows[i]))}</div></div>`).join(''):'';
+  $('#rkHead').innerHTML=rkMode==='eq'?'<th class="num">#</th><th>Equipe</th><th>Turma</th><th class="num">Vitórias</th><th class="num">Partidas</th><th class="num">Acertos</th><th class="num">Casas</th>':'<th class="num">#</th><th>Turma</th><th class="num">Partidas</th><th class="num">Acertos</th><th class="num">Casas</th>';
+  $('#rkBody').innerHTML=rows.length?rows.map((r,i)=>rkMode==='eq'?`<tr><td class="num">${i+1}</td><td>${esc(r.nome)}</td><td>${esc(r.turma||'—')}</td><td class="num">${r.vit}</td><td class="num">${r.par}</td><td class="num">${r.ac}</td><td class="num">${r.casas}</td></tr>`:`<tr><td class="num">${i+1}</td><td>${esc(r.nome)}</td><td class="num">${r.par}</td><td class="num">${r.ac}</td><td class="num">${r.casas}</td></tr>`).join(''):`<tr><td class="empty" colspan="7">Nenhuma partida salva ainda. Termine uma partida ou use “Encerrar e salvar no ranking”.</td></tr>`;
+  const fmt=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+  const del=NET.isAdmin();
+  $('#gBody').innerHTML=GAMES.length?GAMES.map(g=>`<tr><td style="white-space:nowrap">${esc(fmt(g.quando))}</td><td>${esc(g.turma||'—')}</td><td>${esc((g.vencedoras||[]).join(' e ')||'—')}${g.fim==='encerrada'?' <span class="note">(encerrada)</span>':''}${g.modo==='online'?' <span class="note">(online)</span>':''}</td><td>${(Array.isArray(g.equipes)?g.equipes:[]).map(e=>`${esc(e.nome)} (${esc(e.casa)})`).join(', ')}</td><td>${del?`<button class="del" type="button" data-id="${esc(g.id)}">Apagar</button>`:''}</td></tr>`).join(''):`<tr><td class="empty" colspan="5">As partidas aparecem aqui quando terminam.</td></tr>`;
+  $('#rkNote').textContent=NET.kind==='firebase'?'O ranking é compartilhado: toda partida terminada neste site entra aqui, de qualquer aparelho.':NET.kind==='demo'?'Modo de demonstração: dados guardados só neste navegador.':'Ranking guardado só neste computador. Para um ranking compartilhado e o modo online, ligue o Firebase (veja o guia).';
+  $('#adm').innerHTML=NET.kind!=='firebase'?'':(NET.isAdmin()?`<span class="note">Entrou como administrador: pode apagar partidas.</span><button class="btn" type="button" id="admOut">Sair</button>`:`<button class="btn" type="button" id="admIn">Entrar como professor para apagar partidas</button>`);
+}
+$('#rkMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;rkMode=b.dataset.m;$('#rkMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderRank()};
+$('#gBody').onclick=async e=>{const b=e.target.closest('.del');if(!b)return;if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Confirmar';return}
+  try{await NET.delGame(b.dataset.id)}catch(err){b.textContent='Sem permissão'}};
+$('#adm').onclick=async e=>{try{if(e.target.id==='admIn')await NET.signIn();if(e.target.id==='admOut')await NET.signOut()}catch(err){$('#rkNote').textContent='Não foi possível entrar. Confira se o login com Google está ativado no Firebase.'}renderRank()};
+
+/* ---------- nova partida e salas ---------- */
+let nT=4;
+function setupUI(){
+  const prev=[...document.querySelectorAll('#tnames input')].map(i=>i.value);const names=prev.length?prev:(S?S.teams.map(t=>t.name):[]);
+  $('#nSeg').innerHTML=[2,3,4,5,6].map(n=>`<button type="button" data-n="${n}" aria-pressed="${n===nT}">${n}</button>`).join('');
+  $('#tnames').innerHTML=[...Array(nT)].map((_,i)=>`<label class="tin"><span class="dot" style="background:${COLORS[i]}"></span><input id="tn${i}" maxlength="30" value="${esc(names[i]||'Equipe '+(i+1))}" aria-label="Nome da equipe ${i+1}"></label>`).join('');
+}
+function openSetup(){
+  nT=S?S.teams.length:4;$('#tnames').innerHTML='';setupUI();$('#setupErr').textContent='';
+  $('#turma').value=S&&S.turma||'';$('#ruleB').checked=!!S&&S.rule==='B';$('#ruleA').checked=!S||S.rule!=='B';
+  $('#whereO').disabled=!NET.online;$('#onlineOff').hidden=NET.online;$('#whereO').checked=NET.online&&ME.mode==='online';$('#whereL').checked=!$('#whereO').checked;
+  $('#scats').innerHTML=CATS.map((c,i)=>`<label class="chk"><input type="checkbox" id="sc${i}" ${!S||S.cats.includes(i)?'checked':''}>${ic(i)}${esc(c)} (${CARDS.filter(x=>x.c===i).length})</label>`).join('');
+  $('#setup').showModal();
+}
+async function start(){
+  const cats=CATS.map((_,i)=>i).filter(i=>$('#sc'+i).checked);if(!cats.length){$('#setupErr').textContent='Marque pelo menos uma categoria.';return}
+  const st=fresh([...Array(nT)].map((_,i)=>$('#tn'+i).value.trim().slice(0,30)||'Equipe '+(i+1)),cats,$('#turma').value.trim().slice(0,20),$('#ruleB').checked?'B':'A');
+  if($('#whereO').checked&&NET.online){
+    st.host=NET.uid;st.modo='online';
+    let code=null;for(let k=0;k<6&&!code;k++){const c=rid(4);try{await NET.createRoom(c,st);code=c}catch(e){}}
+    if(!code){$('#setupErr').textContent='Não foi possível criar a sala. Confira a internet e tente de novo.';return}
+    $('#setup').close();joinRoom(code,null);
+  }else{leaveRoom(false);S=st;saveLocal();seenPhase=null;render();$('#setup').close()}
+  location.hash='jogar';
+}
+function joinRoom(code,teamIdx){
+  if(unsubRoom)unsubRoom();ME={mode:'online',code,team:teamIdx};saveMe();firstRender=true;seenPhase=null;
+  unsubRoom=NET.subRoom(code,st=>{if(!st){if(ME.mode==='online'&&ME.code===code){flash('A sala não foi encontrada ou a conexão caiu.')}return}if(ME.code!==code)return;S=st;render();maybeSave()});
+}
+function leaveRoom(restore=true){
+  if(unsubRoom){unsubRoom();unsubRoom=null}
+  const was=ME.mode==='online';ME={mode:'local',code:null,team:null};saveMe();
+  if(was&&restore){let s=null;try{s=JSON.parse(localStorage.getItem('pg-jogo'))}catch(e){}S=s&&s.teams?s:fresh(['Equipe 1','Equipe 2','Equipe 3','Equipe 4'],[0,1,2,3,4,5],'','A');firstRender=true;seenPhase=null;render()}
+}
+$('#nSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;nT=+b.dataset.n;setupUI()};
+$('#startBtn').onclick=start;
+$('#novaBtn').onclick=openSetup;
+$('#joinBtn').onclick=()=>{if(!NET.online){flash('O modo online ainda não está ativado neste site.');location.hash='jogar';return}$('#joinErr').textContent='';$('#joinCode').value='';$('#joinDlg').showModal()};
+$('#joinNo').onclick=()=>$('#joinDlg').close();
+$('#joinForm').onsubmit=async e=>{e.preventDefault();const c=$('#joinCode').value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){$('#joinErr').textContent='O código tem 4 letras.';return}
+  let st=null;try{st=await NET.getRoom(c)}catch(err){}
+  if(!st){$('#joinErr').textContent='Sala não encontrada. Confira o código.';return}
+  $('#joinDlg').close();joinRoom(c,null);location.hash='jogar'};
+$('#roombar').onchange=e=>{if(e.target.id==='meTeam'){ME.team=e.target.value===''?null:+e.target.value;saveMe();render()}};
+$('#roombar').onclick=e=>{if(e.target.id==='leaveBtn')leaveRoom()};
+$('#pickTeam').oncancel=e=>e.preventDefault();
+$('#ptRow').onclick=e=>{const b=e.target.closest('button');if(b)act('pick',()=>pickTeam(+b.dataset.i))};
+$('#againBtn').onclick=()=>{$('#winDlg').close();openSetup()};
+$('#seeRk').onclick=()=>{$('#winDlg').close();location.hash='ranking'};
+$('#endBtn').onclick=()=>{if(S.phase!=='over')$('#endDlg').showModal()};
+$('#endNo').onclick=()=>$('#endDlg').close();
+$('#endYes').onclick=()=>{$('#endDlg').close();act('end',endGame)};
+$('#drawBtn').onclick=()=>act('draw',draw);
+$('#board').onclick=e=>{const h=e.target.closest('.hx');if(h)act('ask',()=>ask(+h.dataset.k))};
+$('#picker').onclick=e=>{const h=e.target.closest('button');if(h&&!h.disabled)act('ask',()=>ask(+h.dataset.k))};
+$('#guess').onsubmit=e=>{e.preventDefault();const g=$('#gIn').value;act('guess',()=>guess(g))};
+$('#askBtn').onclick=()=>act('ask',askNew);
+$('#passBtn').onclick=()=>act('pass',pass);
+$('#msg').onclick=e=>{if(e.target.id==='ovr')act('override',override)};
+
+/* ---------- cartas ---------- */
+let fcat=-1;
+function renderGrid(){
+  const q=norm($('#q').value);
+  const list=CARDS.map((c,i)=>[c,i]).filter(([c])=>(fcat<0||c.c===fcat)&&(!q||norm(c.t).includes(q)||norm(c.d.join(' ')).includes(q)));
+  $('#cnt').textContent=`${list.length} carta${list.length===1?'':'s'}`;
+  $('#grid').innerHTML=list.map(([c,i])=>`<button class="mini" type="button" data-i="${i}">${ic(c.c)}<strong>${esc(c.t)}</strong></button>`).join('');
+}
+$('#fchips').innerHTML=`<button type="button" data-c="-1" aria-pressed="true">Todas</button>`+CATS.map((c,i)=>`<button type="button" data-c="${i}" aria-pressed="false">${ic(i)}${esc(c)}</button>`).join('');
+$('#fchips').onclick=e=>{const b=e.target.closest('button');if(!b)return;fcat=+b.dataset.c;$('#fchips').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderGrid()};
+$('#q').oninput=renderGrid;
+$('#grid').onclick=e=>{const b=e.target.closest('.mini');if(!b)return;renderCard($('#cardDlg'),CARDS[+b.dataset.i],null,true,-1);$('#cardDlg').showModal()};
+$('#cardDlg .close').onclick=()=>$('#cardDlg').close();
+$('#cardDlg').onclick=e=>{if(e.target.id==='cardDlg')$('#cardDlg').close()};
+
+/* ---------- navegação e início ---------- */
+function route(){const v=['jogar','ranking','cartas','sobre'].includes(location.hash.slice(1))?location.hash.slice(1):'jogar';
+  document.querySelectorAll('.view').forEach(s=>s.hidden=s.id!==v);
+  document.querySelectorAll('nav a').forEach(a=>{if(a.dataset.v===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')})}
+addEventListener('hashchange',route);
+(async()=>{
+  route();
+  $('#sobreCnt').textContent=`São ${CARDS.length} cartas em seis categorias: ${CATS.join(', ').replace(/, (?=[^,]*$)/,' e ')}. Todas podem ser consultadas na aba Cartas.`;
+  renderGrid();
+  let s=null;try{s=JSON.parse(localStorage.getItem('pg-jogo'))}catch(e){}
+  S=s&&s.teams&&s.cats?s:fresh(['Equipe 1','Equipe 2','Equipe 3','Equipe 4'],[0,1,2,3,4,5],'','A');
+  render();
+  const fb=await firebaseNet();if(fb)NET=fb;
+  let me=null;try{me=JSON.parse(store().getItem('pg-me'))}catch(e){}
+  if(me&&me.mode==='online'&&me.code&&NET.online)joinRoom(me.code,me.team);
+  else if(!s&&!['ranking','cartas','sobre'].includes(location.hash.slice(1)))openSetup();
+  let unG=NET.subGames(list=>{if(list){GAMES=list;renderRank()}else $('#rkNote').textContent='Não foi possível carregar o ranking agora.'});
+  NET.onAuth(()=>renderRank());
+  renderRank();
+})();
+}
+</script>
+</body>
+</html>
