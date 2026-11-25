@@ -423,10 +423,11 @@ const store=()=>NET.kind==='demo'?sessionStorage:localStorage;
 const saveLocal=()=>{if(ME.mode==='local'){try{localStorage.setItem('pg-jogo',JSON.stringify(S))}catch(e){}}};
 const saveMe=()=>{try{store().setItem('pg-me',JSON.stringify(ME))}catch(e){}};
 const team=()=>S.teams[S.cur];
+const myT=()=>{if(ME.mode!=='online'||!S||!Array.isArray(S.owners))return null;const i=S.owners.indexOf(NET.uid);return i<0?null:i};
 const isHost=()=>ME.mode==='online'&&S&&S.host===NET.uid;
 const who=i=>`<span class="who"><span class="dot" style="background:${COLORS[i]}"></span>${esc(S.teams[i].name)}</span>`;
 function fresh(names,cats,turma,rule,tempo=0){
-  return{tempo,deadline:null,cards:0,id:'p'+Date.now().toString(36)+rid(4).toLowerCase(),turma,rule,teams:names.map(n=>({name:n,pos:0,skip:false,hits:0})),cats,decks:null,lastCat:null,card:null,rev:[],nw:-1,phase:'draw',cur:0,log:[],steal:false,winners:[],end:null,msg:null,ev:null,evn:0,pick:null,host:null,modo:'local'};
+  return{tempo,deadline:null,cards:0,id:'p'+Date.now().toString(36)+rid(4).toLowerCase(),turma,rule,teams:names.map(n=>({name:n,pos:0,skip:false,hits:0})),cats,owners:names.map(()=>null),decks:null,lastCat:null,card:null,rev:[],nw:-1,phase:'draw',cur:0,log:[],steal:false,winners:[],end:null,msg:null,ev:null,evn:0,pick:null,host:null,modo:'local'};
 }
 function log(t){S.log.unshift(t);S.log=S.log.slice(0,6)}
 function nextTeam(){for(let k=0;k<S.teams.length;k++){S.cur=(S.cur+1)%S.teams.length;if(S.teams[S.cur].skip){S.teams[S.cur].skip=false;log(`${S.teams[S.cur].name} perdeu a vez.`);continue}break}}
@@ -497,8 +498,10 @@ function can(a){
   if(a==='time')return true;
   if(ME.mode!=='online')return true;
   if(a==='end')return isHost();
-  if(a==='draw')return ME.team===S.cur||isHost();
-  return ME.team===S.cur;
+  if(a==='claim')return true;
+  if(a==='release')return isHost();
+  if(a==='draw')return myT()===S.cur||isHost();
+  return myT()===S.cur;
 }
 async function act(a,fn){
   if(!S||!can(a))return;
@@ -524,17 +527,17 @@ function render(){
   const on=ME.mode==='online',ph=S.phase;
   // sala online
   const rb=$('#roombar');rb.hidden=!on;document.body.classList.toggle('online',on);
-  if(on){rb.innerHTML=`<span>Sala</span><span class="code">${esc(ME.code)}</span><label>Neste aparelho: <select id="meTeam" class="${ME.team===null&&!isHost()?'need':''}"><option value="">só acompanhar</option>${S.teams.map((t,i)=>`<option value="${i}" ${ME.team===i?'selected':''}>${esc(t.name)}</option>`).join('')}</select></label><button class="btn" type="button" id="leaveBtn">Sair da sala</button>`+
-    (isHost()?`<span class="hint">Para entrar: abra este site em outro aparelho, toque em “Entrar numa sala” e digite ${esc(ME.code)}. Esta tela controla a partida.</span>`:(ME.team===null?'<span class="hint need">Escolha a sua equipe acima para jogar.</span>':''))}
+  if(on){rb.innerHTML=`<span>Sala</span><span class="code">${esc(ME.code)}</span><label>Neste aparelho: <select id="meTeam" class="${myT()===null&&!isHost()?'need':''}"><option value="">só acompanhar</option>${S.teams.map((t,i)=>{const own=(S.owners||[])[i],busy=own&&own!==NET.uid;return `<option value="${i}" ${myT()===i?'selected':''} ${busy?'disabled':''}>${esc(t.name)}${busy?' (em uso)':''}</option>`}).join('')}</select></label><button class="btn" type="button" id="leaveBtn">Sair da sala</button>`+
+    (isHost()?`<span class="hint">Para entrar: abra este site em outro aparelho, toque em “Entrar numa sala” e digite ${esc(ME.code)}. Esta tela controla a partida.</span>`:(myT()===null?'<span class="hint need">Escolha a sua equipe acima para jogar. Cada equipe só pode ser usada em um aparelho.</span>':''))}
   // tabuleiro
   const myTurn=can('ask');
   $('#board').innerHTML=HEX.map(([x,y],i)=>{const av=ph==='ask'&&!S.rev.includes(i)&&myTurn;return `<button class="hx ${S.card!==null&&S.rev.includes(i)?'used':''} ${av?'on':''}" style="left:${x}%;top:${y}%" data-k="${i}" aria-label="Dica ${i+1}" ${av?'':'tabindex="-1"'}></button>`}).join('')+
     S.teams.map((t,i)=>{const same=S.teams.filter((o,j)=>o.pos===t.pos&&j<i).length;const[x,y]=cellXY(t.pos);const off=[[0,0],[1.1,0],[-1.1,0],[0,1.6],[1.1,1.6],[-1.1,1.6]][same];
       return `<div class="pawn ${i===S.cur&&ph!=='over'?'cur':''}" style="background:${COLORS[i]};left:${x+off[0]}%;top:${y+off[1]}%" title="${esc(t.name)}">${i+1}</div>`}).join('');
-  $('#teams').innerHTML=S.teams.map((t,i)=>`<div class="team ${i===S.cur?'cur':''}"><span class="dot" style="background:${COLORS[i]}"></span>${esc(t.name)}${on&&ME.team===i?' (você)':''} <b>casa ${+t.pos}</b>${t.skip?'<span class="skip">perde a vez</span>':''}</div>`).join('');
+  $('#teams').innerHTML=S.teams.map((t,i)=>`<div class="team ${i===S.cur?'cur':''}"><span class="dot" style="background:${COLORS[i]}"></span>${esc(t.name)}${on&&myT()===i?' (você)':''}${on&&isHost()&&(S.owners||[])[i]&&(S.owners||[])[i]!==NET.uid?` <button class="del" type="button" data-rel="${i}" title="Libera a equipe para outro aparelho">liberar</button>`:''} <b>casa ${+t.pos}</b>${t.skip?'<span class="skip">perde a vez</span>':''}</div>`).join('');
   // status
   const c=S.card===null?null:CARDS[S.card],left=12-S.rev.length,w=who(S.cur);
-  const yours=on&&ME.team===S.cur&&ph!=='over'?' <strong>(é a sua vez!)</strong>':'';
+  const yours=on&&myT()===S.cur&&ph!=='over'?' <strong>(é a sua vez!)</strong>':'';
   const st={draw:`${w} começa. Puxe uma carta.`,ask:`Vez de ${w}: escolha uma dica de 1 a 12${innerWidth>=1000?' no tabuleiro':''}.`,guess:S.steal?`Vez de ${w}: respondam com as dicas lidas ou peçam uma nova dica.`:`${w}: quem ou o que sou eu? Responda ou passe.`,choose:`${w} está escolhendo uma equipe.`,done:`Próxima carta: ${w} começa.`,over:`Fim de jogo.`}[ph]||'';
   $('#status').innerHTML='<span id="clock" class="clock" hidden></span>'+(S.turma?`<span style="font-weight:400">Turma ${esc(S.turma)} · </span>`:'')+st+yours+(c&&!['done','draw','over'].includes(ph)?` <span style="font-weight:400">Acertando agora: avança ${Math.max(1,left)}.</span>`:'');
   tick();
@@ -578,7 +581,7 @@ function tick(){
   const s=Math.max(0,Math.ceil((S.deadline-Date.now())/1000));
   el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;el.classList.toggle('low',s<=10);
   const late=Date.now()-S.deadline;
-  if(late>=0&&lastTO!==S.deadline&&(ME.mode!=='online'||(late>1500&&(ME.team===S.cur||isHost()))||late>5000)){lastTO=S.deadline;act('time',timeUp)}
+  if(late>=0&&lastTO!==S.deadline&&(ME.mode!=='online'||(late>1500&&(myT()===S.cur||isHost()))||late>5000)){lastTO=S.deadline;act('time',timeUp)}
 }
 setInterval(tick,500);
 
@@ -651,6 +654,7 @@ function joinRoom(code,teamIdx){
   unsubRoom=NET.subRoom(code,st=>{if(!st){if(ME.mode==='online'&&ME.code===code){flash('A sala não foi encontrada ou a conexão caiu.')}return}if(ME.code!==code)return;S=st;render()});
 }
 function leaveRoom(restore=true){
+  if(ME.mode==='online'&&ME.code&&myT()!==null){const c=ME.code;NET.tx(c,cur=>{if(!cur||!Array.isArray(cur.owners))return null;cur.owners=cur.owners.map(o=>o===NET.uid?null:o);return cur}).catch(()=>{})}
   if(unsubRoom){unsubRoom();unsubRoom=null}
   const was=ME.mode==='online';ME={mode:'local',code:null,team:null};saveMe();
   if(was&&restore){let s=null;try{s=JSON.parse(localStorage.getItem('pg-jogo'))}catch(e){}S=s&&s.teams?s:fresh(['Equipe 1','Equipe 2','Equipe 3','Equipe 4'],[0,1,2,3,4,5],'','A');firstRender=true;seenPhase=null;render()}
@@ -666,7 +670,16 @@ $('#joinForm').onsubmit=async e=>{e.preventDefault();const c=$('#joinCode').valu
   let st=null;try{st=await NET.getRoom(c)}catch(err){}
   if(!st){$('#joinErr').textContent='Sala não encontrada. Confira o código.';return}
   $('#joinDlg').close();joinRoom(c,null);location.hash='jogar'};
-$('#roombar').onchange=e=>{if(e.target.id==='meTeam'){ME.team=e.target.value===''?null:+e.target.value;saveMe();render()}};
+function claim(i){
+  if(!Array.isArray(S.owners))S.owners=S.teams.map(()=>null);
+  const uid=NET.uid;
+  if(i!==null&&S.owners[i]&&S.owners[i]!==uid){S.claimFail=true;return}
+  S.owners=S.owners.map(o=>o===uid?null:o);if(i!==null)S.owners[i]=uid;
+}
+$('#roombar').onchange=async e=>{if(e.target.id!=='meTeam')return;const i=e.target.value===''?null:+e.target.value;let fail=false;
+  try{await NET.tx(ME.code,cur=>{if(!cur)return null;S=cur;claim(i);if(S.claimFail){delete S.claimFail;fail=true;return null}return S})}catch(err){fail=true}
+  if(fail){flash('Essa equipe já está sendo jogada em outro aparelho.');render()}};
+$('#teams').onclick=e=>{const b=e.target.closest('[data-rel]');if(!b)return;const i=+b.dataset.rel;act('release',()=>{if(Array.isArray(S.owners))S.owners[i]=null})};
 $('#roombar').onclick=e=>{if(e.target.id==='leaveBtn')leaveRoom()};
 $('#pickTeam').oncancel=e=>e.preventDefault();
 $('#ptRow').onclick=e=>{const b=e.target.closest('button');if(b)act('pick',()=>pickTeam(+b.dataset.i))};
