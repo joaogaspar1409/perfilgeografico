@@ -197,6 +197,15 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
 }
 @media(min-width:1000px) and (min-height:980px){.log{display:block}}
 @media(min-width:1000px) and (max-height:980px){.roombar .hint:not(.need){display:none}.roombar .hint.need{flex-basis:auto}.roombar select{max-width:9em}.roombar{flex-wrap:nowrap;gap:8px;font-size:15px}.roombar .code{padding:3px 8px}}
+
+.menu{position:relative}
+#playBtn{background:#f6ead0;color:#5a3a14;border-color:#f6ead0}
+#playBtn:hover{background:#fff6e2}
+.menu-list{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:220px;background:#fffaf0;border:1.5px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(40,20,0,.3);padding:6px;display:grid}
+.menu-list[hidden]{display:none}
+.menu-list button{min-height:44px;text-align:left;padding:8px 14px;border:0;border-radius:8px;background:none;font-weight:700;color:#3f2a12}
+.menu-list button:hover,.menu-list button:focus-visible{background:#ead6ab}
+#fMode{margin:6px 0 2px}
 </style>
 <script src="firebase-config.js"></script>
 <script src="cartas.js"></script>
@@ -222,14 +231,19 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
 <header>
   <div class="brand">Perfil Geográfico <small>CIEP 353</small></div>
   <nav>
-    <a href="#jogar" data-v="jogar">Jogar</a>
     <a href="#ranking" data-v="ranking">Ranking</a>
     <a href="#cartas" data-v="cartas">Cartas</a>
     <a href="#sobre" data-v="sobre">Quem fez</a>
   </nav>
   <button class="btn" id="fsBtn" type="button" title="Tela cheia">Tela cheia</button>
-  <button class="btn" id="joinBtn" type="button">Entrar numa sala</button>
-  <button class="btn" id="novaBtn" type="button">Nova partida</button>
+  <div class="menu" id="playMenu">
+    <button class="btn main" id="playBtn" type="button" aria-haspopup="true" aria-expanded="false">Jogar ▾</button>
+    <div class="menu-list" id="playList" hidden>
+      <button type="button" id="backBtn">Voltar à partida</button>
+      <button type="button" id="novaBtn">Nova partida</button>
+      <button type="button" id="joinBtn">Entrar numa sala</button>
+    </div>
+  </div>
 </header>
 <main>
   <section id="jogar" class="view" aria-label="Jogo">
@@ -290,6 +304,7 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
         <p>Professores de Geografia: <strong>João Victor Gaspar Martins</strong> e <strong>Letícia Rocha da Conceição</strong>, que também revisaram as cartas e ampliaram o baralho com todos os estados, capitais e os 193 países-membros da ONU.</p>
         <h2>Como jogar</h2>
         <ol>
+          <li>Em “Jogar → Nova partida”, escolha quantas equipes vão jogar e quais cartas entram: por categoria, por continente, por região do Brasil ou por tema do ENEM.</li>
           <li>Na sua vez, a equipe escolhe um número de 1 a 12 (no tabuleiro ou nos hexágonos ao lado da carta) e lê a dica.</li>
           <li>Depois pode tentar adivinhar quem ou o que é a carta, ou passar. Se errar ou passar, a vez vai para a próxima equipe. Em Nova partida dá para escolher se a próxima equipe pede outra dica ou pode responder logo com as dicas já lidas.</li>
           <li>Quem acerta avança uma casa para cada dica que ainda não foi lida. Quanto menos dicas, mais longe se vai.</li>
@@ -297,7 +312,7 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
           <li>Se ninguém acertar depois das 12 dicas, a resposta aparece e ninguém anda. Vence quem chegar primeiro à casa 78. A partida entra no ranking automaticamente a cada carta. Se a aula acabar antes, use “Encerrar partida”: vence quem estiver mais à frente. Partidas abandonadas aparecem como interrompidas.</li>
         </ol>
         <h2>Jogar online</h2>
-        <p>Em Nova partida, escolha “Online”. O site cria uma sala com um código de 4 letras. Em cada celular ou computador, abra o site, toque em “Entrar numa sala”, digite o código e escolha a equipe. Cada equipe só joga na sua vez; a tela de quem criou a sala pode ficar no projetor.</p>
+        <p>Em “Jogar → Nova partida”, escolha “Online”. O site cria uma sala com um código de 4 letras. Em cada celular ou computador, abra o site, toque em “Jogar → Entrar numa sala”, digite o código e escolha a equipe. Cada equipe só joga na sua vez; a tela de quem criou a sala pode ficar no projetor.</p>
         <h2>As cartas</h2>
         <p id="sobreCnt"></p>
       </div>
@@ -314,7 +329,7 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
       <label><input type="radio" name="where" id="whereO">Online: cada equipe no seu celular ou computador, com código de sala.</label>
     </div>
     <p class="note" id="onlineOff" hidden>O modo online ainda não está ativado neste site. Siga o guia de publicação para ligar o Firebase.</p>
-    <div class="row"><label class="tin"><strong>Turma</strong> <input id="turma" placeholder="ex.: 1001" aria-label="Turma (opcional)" style="width:8em"></label></div>
+    <div class="row"><label class="tin"><strong>Turma</strong> <span class="note">(opcional)</span> <input id="turma" placeholder="ex.: 1001" aria-label="Turma (opcional)" style="width:8em"></label></div>
     <strong>Quantas equipes?</strong>
     <div class="seg row" id="nSeg"></div>
     <div class="row" id="tnames"></div>
@@ -325,8 +340,10 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
       <label><input type="radio" name="rule" id="ruleA" checked>A vez passa para a próxima equipe, que pede uma nova dica.</label>
       <label><input type="radio" name="rule" id="ruleB">A vez passa e a próxima equipe pode responder logo, com as dicas já lidas, ou pedir uma nova dica.</label>
     </div>
-    <strong>Categorias</strong>
+    <strong>Quais cartas?</strong>
+    <div class="chips row" id="fMode"></div>
     <div class="row" id="scats"></div>
+    <p class="note" id="fInfo"></p>
     <p class="msg bad" id="setupErr"></p>
     <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" value="cancel" type="submit">Cancelar</button><button class="btn main" id="startBtn" type="button">Começar</button></div>
   </form>
@@ -351,6 +368,12 @@ form.guess{flex-wrap:nowrap}form.guess input{flex:1 1 90px;min-width:0}form.gues
 <script>
 {
 const CATS=['Natureza e Ambiente','Cartografia','Economia e Geopolítica','Sociedade e Cultura','Brasil','Mundo'];
+const CONTS=['África','América do Sul','América do Norte e Central','Ásia','Europa','Oceania'];
+const REGS=['Norte','Nordeste','Centro-Oeste','Sudeste','Sul'];
+const TEMAS=['Cartografia e representações','Natureza: clima, relevo, hidrografia e biomas','Questão ambiental','Indústria, trabalho e tecnologia','Espaço agrário','Urbanização e cidades','População, migrações e desigualdades','Globalização, geopolítica e conflitos','Brasil: território, economia e sociedade','Conceitos-chave da Geografia'];
+// modos de seleção de cartas: o nome e a regra de cada opção (a classificação não aparece na carta)
+const MODES={cat:{label:'Categorias',opts:CATS,has:(c,i)=>c.c===i},cont:{label:'Continentes',opts:CONTS,has:(c,i)=>(c.k||[]).includes(i)},reg:{label:'Regiões do Brasil',opts:REGS,has:(c,i)=>(c.r||[]).includes(i)},tema:{label:'Temas do ENEM',opts:TEMAS,has:(c,i)=>(c.e||[]).includes(i)}};
+const idsOf=(m,i)=>CARDS.map((c,j)=>MODES[m].has(c,i)?j:-1).filter(j=>j>=0);
 const COLORS=['#a4161a','#1b4965','#2d6a4f','#6a4c93','#d17a00','#222222'];
 const W=842.25,H=595.5,PX=110/72,GOAL=78;
 const CARDS=window.CARTAS||[];
@@ -366,7 +389,19 @@ const R=27,DX=R*Math.sqrt(3),X0=198;
 const HEX=[...Array(12)].map((_,i)=>i<6?[(X0+DX/2+i*DX)/W*100,52/H*100]:[(X0+(i-6)*DX)/W*100,(52+1.5*R)/H*100]);
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\(.*?\)/g,' ').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w&&!['o','a','os','as','do','da','de','dos','das','e','um','uma'].includes(w)).join(' ');
 const lev=(a,b)=>{const d=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){let p=d[0];d[0]=i;for(let j=1;j<=b.length;j++){const t=d[j];d[j]=Math.min(d[j]+1,d[j-1]+1,p+(a[i-1]===b[j-1]?0:1));p=t}}return d[b.length]};
-const match=(g,t)=>{const a=norm(g),b=norm(t);if(!a)return false;if(a===b)return true;return b.length>=4&&lev(a,b)<=Math.floor(b.length/6)};
+const sq=s=>s.replace(/ /g,'');
+const close=(a,b)=>{if(a===b||sq(a)===sq(b))return 0;const d=lev(sq(a),sq(b));const L=sq(b).length;return L>=4&&d<=Math.max(1,Math.round(L*.25))?d:99};
+let NORMS=null;
+const match=(g,t)=>{
+  const a=norm(g),b=norm(t);if(!a)return false;if(a===b)return true;
+  if(!NORMS)NORMS=CARDS.map(c=>norm(c.t));
+  if(NORMS.some(n=>n===a&&n!==b))return false;           // é o nome exato de outra carta
+  const words=b.split(' ');                              // aceita o nome principal de títulos longos (ex.: 'Rio São Francisco' -> 'São Francisco')
+  const al=(CARDS.find(c=>norm(c.t)===b)||{}).a||[];        // outros nomes aceitos (campo 'a' da carta)
+  const cand=[b,words.length>1&&words[0].length<=4?words.slice(1).join(' '):null,...al.map(norm)].filter(Boolean);
+  const best=Math.min(...cand.map(x=>close(a,x)));if(best===99)return false;
+  return !NORMS.some(n=>n!==b&&close(a,n)<best);        // nenhuma outra carta é mais parecida
+};
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const rid=n=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s};
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -426,8 +461,9 @@ const team=()=>S.teams[S.cur];
 const myT=()=>{if(ME.mode!=='online'||!S||!Array.isArray(S.owners))return null;const i=S.owners.indexOf(NET.uid);return i<0?null:i};
 const isHost=()=>ME.mode==='online'&&S&&S.host===NET.uid;
 const who=i=>`<span class="who"><span class="dot" style="background:${COLORS[i]}"></span>${esc(S.teams[i].name)}</span>`;
-function fresh(names,cats,turma,rule,tempo=0){
-  return{tempo,deadline:null,cards:0,id:'p'+Date.now().toString(36)+rid(4).toLowerCase(),turma,rule,teams:names.map(n=>({name:n,pos:0,skip:false,hits:0})),cats,owners:names.map(()=>null),decks:null,lastCat:null,card:null,rev:[],nw:-1,phase:'draw',cur:0,log:[],steal:false,winners:[],end:null,msg:null,ev:null,evn:0,pick:null,host:null,modo:'local'};
+function fresh(names,cats,turma,rule,tempo=0,fm='cat',fo=null){
+  fo=fo||cats;
+  return{fm,fo,used:[],lastG:null,tempo,deadline:null,cards:0,id:'p'+Date.now().toString(36)+rid(4).toLowerCase(),turma,rule,teams:names.map(n=>({name:n,pos:0,skip:false,hits:0})),cats,owners:names.map(()=>null),decks:null,lastCat:null,card:null,rev:[],nw:-1,phase:'draw',cur:0,log:[],steal:false,winners:[],end:null,msg:null,ev:null,evn:0,pick:null,host:null,modo:'local'};
 }
 function log(t){S.log.unshift(t);S.log=S.log.slice(0,6)}
 function nextTeam(){for(let k=0;k<S.teams.length;k++){S.cur=(S.cur+1)%S.teams.length;if(S.teams[S.cur].skip){S.teams[S.cur].skip=false;log(`${S.teams[S.cur].name} perdeu a vez.`);continue}break}}
@@ -436,11 +472,18 @@ const pool=c=>shuffle(CARDS.map((x,i)=>i).filter(i=>CARDS[i].c===c));
 /* ---------- regras (só mexem em S) ---------- */
 function draw(){
   if(!(S.phase==='draw'||S.phase==='done'))return;
-  if(!S.decks){S.decks={};S.cats.forEach(c=>{S.decks[c]=pool(c)})}
-  const opts=S.cats.length>1?S.cats.filter(c=>c!==S.lastCat):S.cats;
-  const cat=opts[Math.floor(Math.random()*opts.length)];
-  if(!S.decks[cat]||!S.decks[cat].length)S.decks[cat]=pool(cat);
-  S.card=S.decks[cat].pop();S.lastCat=cat;S.rev=[];S.phase='ask';S.steal=false;S.nw=-1;S.msg=null;S.ev=null;S.pick=null;clock();
+  if(!S.fm||!Array.isArray(S.fo)){S.fm='cat';S.fo=S.cats||[0,1,2,3,4,5];S.used=[]}
+  const groups=S.fo.map(i=>idsOf(S.fm,i));
+  // sorteio equilibrado: cada opção marcada tem a mesma chance; sem repetir a anterior nem cartas já usadas
+  const used=new Set(S.used||[]);
+  let av=groups.map(g=>g.filter(j=>!used.has(j)));
+  if(av.every(g=>!g.length)){S.used=[];av=groups.map(g=>g.slice())}
+  let opts=av.map((g,i)=>g.length?i:-1).filter(i=>i>=0);
+  if(opts.length>1)opts=opts.filter(i=>i!==S.lastG);
+  const gi=opts[Math.floor(Math.random()*opts.length)];
+  const card=av[gi][Math.floor(Math.random()*av[gi].length)];
+  S.used=[...(S.used||[]),card];S.lastG=gi;
+  S.card=card;S.rev=[];S.phase='ask';S.steal=false;S.nw=-1;S.msg=null;S.ev=null;S.pick=null;clock();
 }
 function move(i,n){const t=S.teams[i];t.pos=Math.max(0,Math.min(GOAL,t.pos+n));if(t.pos>=GOAL){finishGame('chegada');return true}return false}
 function finishGame(kind){
@@ -528,7 +571,7 @@ function render(){
   // sala online
   const rb=$('#roombar');rb.hidden=!on;document.body.classList.toggle('online',on);
   if(on){rb.innerHTML=`<span>Sala</span><span class="code">${esc(ME.code)}</span><label>Neste aparelho: <select id="meTeam" class="${myT()===null&&!isHost()?'need':''}"><option value="">só acompanhar</option>${S.teams.map((t,i)=>{const own=(S.owners||[])[i],busy=own&&own!==NET.uid;return `<option value="${i}" ${myT()===i?'selected':''} ${busy?'disabled':''}>${esc(t.name)}${busy?' (em uso)':''}</option>`}).join('')}</select></label><button class="btn" type="button" id="leaveBtn">Sair da sala</button>`+
-    (isHost()?`<span class="hint">Para entrar: abra este site em outro aparelho, toque em “Entrar numa sala” e digite ${esc(ME.code)}. Esta tela controla a partida.</span>`:(myT()===null?'<span class="hint need">Escolha a sua equipe acima para jogar. Cada equipe só pode ser usada em um aparelho.</span>':''))}
+    (isHost()?`<span class="hint">Para entrar: abra este site em outro aparelho, toque em “Jogar → Entrar numa sala” e digite ${esc(ME.code)}. Esta tela controla a partida.</span>`:(myT()===null?'<span class="hint need">Escolha a sua equipe acima para jogar. Cada equipe só pode ser usada em um aparelho.</span>':''))}
   // tabuleiro
   const myTurn=can('ask');
   $('#board').innerHTML=HEX.map(([x,y],i)=>{const av=ph==='ask'&&!S.rev.includes(i)&&myTurn;return `<button class="hx ${S.card!==null&&S.rev.includes(i)?'used':''} ${av?'on':''}" style="left:${x}%;top:${y}%" data-k="${i}" aria-label="Dica ${i+1}" ${av?'':'tabindex="-1"'}></button>`}).join('')+
@@ -623,7 +666,17 @@ $('#gBody').onclick=async e=>{const b=e.target.closest('.del');if(!b)return;if(b
 $('#adm').onclick=async e=>{try{if(e.target.id==='admIn')await NET.signIn();if(e.target.id==='admOut')await NET.signOut()}catch(err){$('#rkNote').textContent='Não foi possível entrar. Confira se o login com Google está ativado no Firebase.'}renderRank()};
 
 /* ---------- nova partida e salas ---------- */
-let nT=4,tempo=60;
+let nT=4,tempo=60,fm='cat',fSel=[0,1,2,3,4,5];
+function filterUI(){
+  $('#fMode').innerHTML=Object.entries(MODES).map(([k,m])=>`<button type="button" data-m="${k}" aria-pressed="${k===fm}">${esc(m.label)}</button>`).join('');
+  $('#scats').innerHTML=MODES[fm].opts.map((o,i)=>`<label class="chk"><input type="checkbox" id="sc${i}" ${fSel.includes(i)?'checked':''}>${fm==='cat'?ic(i):''}${esc(o)} (${idsOf(fm,i).length})</label>`).join('');
+  fCount();
+}
+function fCount(){
+  const sel=MODES[fm].opts.map((_,i)=>i).filter(i=>$('#sc'+i)&&$('#sc'+i).checked);fSel=sel;
+  const n=new Set(sel.flatMap(i=>idsOf(fm,i))).size;
+  $('#fInfo').textContent=`${n} cartas nesta seleção.`+(n&&n<10?' É pouco para uma partida: marque mais opções.':n<25&&n?' Com poucas cartas, elas podem se repetir numa partida longa.':'');
+}
 function tSegUI(){$('#tSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.t===tempo))}
 function setupUI(){
   const prev=[...document.querySelectorAll('#tnames input')].map(i=>i.value);const names=prev.length?prev:(S?S.teams.map(t=>t.name):[]);
@@ -635,12 +688,13 @@ function openSetup(){
   $('#turma').value=S&&S.turma||'';$('#ruleB').checked=!!S&&S.rule==='B';$('#ruleA').checked=!S||S.rule!=='B';
   $('#whereO').disabled=!NET.online;$('#onlineOff').hidden=NET.online;$('#whereO').checked=NET.online&&ME.mode==='online';$('#whereL').checked=!$('#whereO').checked;
   tempo=S&&S.tempo!=null?S.tempo:60;tSegUI();
-  $('#scats').innerHTML=CATS.map((c,i)=>`<label class="chk"><input type="checkbox" id="sc${i}" ${!S||S.cats.includes(i)?'checked':''}>${ic(i)}${esc(c)} (${CARDS.filter(x=>x.c===i).length})</label>`).join('');
+  fm=S&&S.fm&&MODES[S.fm]?S.fm:'cat';fSel=S&&Array.isArray(S.fo)&&S.fm===fm?S.fo.slice():MODES[fm].opts.map((_,i)=>i);filterUI();
   $('#setup').showModal();
 }
 async function start(){
-  const cats=CATS.map((_,i)=>i).filter(i=>$('#sc'+i).checked);if(!cats.length){$('#setupErr').textContent='Marque pelo menos uma categoria.';return}
-  const st=fresh([...Array(nT)].map((_,i)=>$('#tn'+i).value.trim().slice(0,30)||'Equipe '+(i+1)),cats,$('#turma').value.trim().slice(0,20),$('#ruleB').checked?'B':'A',tempo);
+  const sel=MODES[fm].opts.map((_,i)=>i).filter(i=>$('#sc'+i).checked);const n=new Set(sel.flatMap(i=>idsOf(fm,i))).size;
+  if(!sel.length||n<10){$('#setupErr').textContent=sel.length?`Essa seleção tem só ${n} cartas. Marque mais opções.`:'Marque pelo menos uma opção.';return}
+  const st=fresh([...Array(nT)].map((_,i)=>$('#tn'+i).value.trim().slice(0,30)||'Equipe '+(i+1)),fm==='cat'?sel:[0,1,2,3,4,5],$('#turma').value.trim().slice(0,20),$('#ruleB').checked?'B':'A',tempo,fm,sel);
   if($('#whereO').checked&&NET.online){
     st.host=NET.uid;st.modo='online';
     let code=null;for(let k=0;k<6&&!code;k++){const c=rid(4);try{await NET.createRoom(c,st);code=c}catch(e){}}
@@ -660,8 +714,16 @@ function leaveRoom(restore=true){
   if(was&&restore){let s=null;try{s=JSON.parse(localStorage.getItem('pg-jogo'))}catch(e){}S=s&&s.teams?s:fresh(['Equipe 1','Equipe 2','Equipe 3','Equipe 4'],[0,1,2,3,4,5],'','A');firstRender=true;seenPhase=null;render()}
 }
 $('#tSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;tempo=+b.dataset.t;tSegUI()};
+$('#fMode').onclick=e=>{const b=e.target.closest('button');if(!b)return;fm=b.dataset.m;fSel=MODES[fm].opts.map((_,i)=>i);filterUI()};
+$('#scats').onchange=fCount;
 $('#nSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;nT=+b.dataset.n;setupUI()};
 $('#startBtn').onclick=start;
+const closeMenu=()=>{$('#playList').hidden=true;$('#playBtn').setAttribute('aria-expanded','false')};
+$('#playBtn').onclick=e=>{e.stopPropagation();const o=$('#playList').hidden;$('#playList').hidden=!o;$('#playBtn').setAttribute('aria-expanded',String(o))};
+document.addEventListener('click',e=>{if(!e.target.closest('#playMenu'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
+$('#playList').addEventListener('click',()=>setTimeout(closeMenu));
+$('#backBtn').onclick=()=>{location.hash='jogar'};
 $('#novaBtn').onclick=openSetup;
 $('#fsBtn').onclick=()=>{try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{})}catch(e){}};
 $('#joinBtn').onclick=()=>{if(!NET.online){flash('O modo online ainda não está ativado neste site.');location.hash='jogar';return}$('#joinErr').textContent='';$('#joinCode').value='';$('#joinDlg').showModal()};
